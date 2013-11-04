@@ -1,4 +1,5 @@
-# Created by http://gitignore.io
+data/
+lib/
 
 ### Java ###
 *.class
@@ -78,4 +79,3 @@ nosetests.xml
 
 # Rope
 .ropeproject
-

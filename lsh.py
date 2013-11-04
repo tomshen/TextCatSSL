@@ -1,5 +1,6 @@
 import random
 import sys
+import hashlib
 
 class LSHasher(object):
     """
@@ -11,15 +12,18 @@ class LSHasher(object):
         self.num_bits = num_bits
         self.seed = seed or random.randint(1,sys.maxint)
         self.dot_products = {}
+        self.m = hashlib.md5()
 
         random.seed(seed)
         self.pool = [random.gauss(0,1) for i in xrange(pool_size)]
 
+    def hash(self, x):
+        self.m.update(str(x))
+        return hash(self.m.digest()) % self.pool_size
 
     def compute_stream(self, doc_features):
         """
-        Compute entire stream of documents and features at once. Note that
-        this function will work even if doc_features is a generator.
+        Compute entire stream of documents and features at once.
         """
         for doc, features in doc_features.items():
             self.compute_doc(doc, features)
@@ -30,16 +34,14 @@ class LSHasher(object):
             self.dot_products[doc] = [0 for i in xrange(self.num_bits)]
         for feature in features:
             for j in xrange(len(self.dot_products[doc])):
-                # the following can and should be replaced by a hash function
-                # that properly maps (seed, feature) -> 0...(pool_size-1)
-                pool_idx = hash(self.seed * j * feature) % self.pool_size
+                pool_idx = self.hash((j+1) * (feature+1))
                 self.dot_products[doc][j] += self.pool[pool_idx]
 
     def compute_signatures(self):
         """Generate bit string signatures for each document"""
         signatures = {}
         for doc, fp_array in self.dot_products.items():
-            signatures[doc] = [0 if f <= 0 else 1 for f in fp_array]
+            signatures[doc] = ''.join(['0' if f <= 0 else '1' for f in fp_array])
         return signatures
 
 def test_LSHasher():
