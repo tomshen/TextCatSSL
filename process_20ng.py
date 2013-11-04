@@ -52,7 +52,7 @@ def process_dataset():
                     weight = '1.0'
                     datawriter.writerow([doc, hashed_word, weight])
 
-def make_seeds():
+def make_seeds(perc_seeds):
     labels = {}
     with open(os.path.join(DATA_DIR, 'test.label'), 'r') as f:
         doc_idx = 1
@@ -64,7 +64,7 @@ def make_seeds():
             doc_idx += 1
     with open(os.path.join(DATA_DIR, 'seeds.data'), 'w') as f:
         for label, docs in labels.items():
-            for doc in random.sample(docs, len(docs) / 2): # take half of labels
+            for doc in random.sample(docs, int(len(docs) * perc_seeds)): # take perc_seeds of labels
                 f.write(str(doc) + '\t' + str(label) + '\t1.0\n')
     with open(os.path.join(DATA_DIR, 'gold.data'), 'w') as f:
         for label, docs in labels.items():
@@ -72,4 +72,4 @@ def make_seeds():
                 f.write(str(doc) + '\t' + str(label) + '\t1.0\n')
 
 # process_dataset()
-make_seeds()
+make_seeds(0.5)

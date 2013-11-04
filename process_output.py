@@ -7,14 +7,19 @@ with open('data/20_newsgroups/label_prop_output', 'rb') as f:
         try:
             doc = int(row[0])
             label_info = row[3].split(' ')
-            label = int(label_info[0]) # will be __DUMMY__ if seed label
-            weight = float(label_info[1])
+            try:
+                label = int(label_info[0])
+                weight = float(label_info[1])
+            except:
+                label = int(label_info[2])
+                weight = float(label_info[3])
+
             pred_labels[doc] = (label, weight)
         except:
             # a word, not a doc (contains hash), or if seed label
             continue
 
-print pred_labels
+# print pred_labels
 
 true_labels = {}
 num_pred = 0
