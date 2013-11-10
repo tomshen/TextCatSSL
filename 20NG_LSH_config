@@ -50,4 +50,4 @@ beta = 2
 # For nodes for which gold (or seed label) information is not known, the corresponding
 # field is left empty.
 #
-output_file = data/20_newsgroups/label_prop_output
+output_file = data/20_newsgroups/hashed_output

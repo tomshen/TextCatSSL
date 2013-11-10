@@ -17,11 +17,11 @@ DATA_SIZE = 7505
 NUM_HASHES = 3
 NUM_FEATURES = 61188
 
-def process_dataset():
+def process_hashed_dataset():
     # first hash labelled 'a', second labelled 'b', etc
     hashers = dict([(string.ascii_lowercase[i], LSHasher(int(math.log(
-        DATA_SIZE / 100, 2)), 1000)) for i in xrange(NUM_HASHES)])
-    print 'Hahsers initialized'
+        DATA_SIZE / 100, 2)), 10000)) for i in xrange(NUM_HASHES)])
+    print 'Hashers initialized'
     doc_features = {}
     with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
         datareader = csv.reader(data, delimiter=' ')
@@ -30,8 +30,8 @@ def process_dataset():
             word = int(row[1]) - 1
             count = int(row[2])
             if doc not in doc_features:
-                doc_features[doc] = [0 for i in xrange(NUM_FEATURES)]
-            doc_features[doc][word] = count
+                doc_features[doc] = [] # [0 for i in xrange(NUM_FEATURES)]
+            doc_features[doc].append(word) #[word] = count
     print 'Loaded doc features'
     signatures = {}
     for hl, h in hashers.items():
@@ -52,6 +52,24 @@ def process_dataset():
                     weight = '1.0'
                     datawriter.writerow([doc, hashed_word, weight])
 
+def process_baseline_dataset():
+    test_data = []
+    max_count = 1 # if we want to weight the edges by word count
+    with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
+        datareader = csv.reader(data, delimiter=' ')
+        for row in datareader:
+            doc = int(row[0])
+            word = int(row[1]) - 1
+            count = int(row[2])
+            if count > max_count:
+                max_count = float(count)
+            test_data.append([doc, word, count])
+
+    with open(os.path.join(DATA_DIR, 'unhashed_test.data'), 'wb') as unhashed:
+        datawriter = csv.writer(unhashed, delimiter='\t')
+        for d,w,c in test_data:
+            datawriter.writerow([str(d), 'w' + str(w), '1.0'])
+
 def make_seeds(perc_seeds):
     labels = {}
     with open(os.path.join(DATA_DIR, 'test.label'), 'r') as f:
@@ -71,5 +89,10 @@ def make_seeds(perc_seeds):
             for doc in docs:
                 f.write(str(doc) + '\t' + str(label) + '\t1.0\n')
 
-# process_dataset()
-make_seeds(0.5)
+if __name__ == '__main__':
+    print 'Processing dataset with LSH'
+    process_hashed_dataset()
+    print 'Processing dataset without LSH'
+    process_baseline_dataset()
+    print 'Choosing seed labels'
+    make_seeds(0.5)
