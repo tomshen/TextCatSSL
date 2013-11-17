@@ -52,7 +52,7 @@ class LSHasher(object):
             self.dot_products[doc] = [0 for i in xrange(self.num_bits)]
         for j in xrange(self.num_bits):
             self.dot_products[doc][j] = sum(
-                (self.pool[self.hash_feature(j+1, f+1)] for f in features))
+                (self.pool[self.hash_feature(j+1, f+1)]*w for f,w in features))
 
     def compute_signatures(self):
         """Generate bit string signatures for each document"""

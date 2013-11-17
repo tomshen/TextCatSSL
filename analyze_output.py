@@ -37,17 +37,17 @@ def compare_to_true_labels(junto_output_filename):
     seeds = get_seeds()
     true_labels = {}
     num_pred = 0
-    num_correct = 0
+    num_incorrect = 0
     with open(os.path.join(DATA_DIR, 'test.label'), 'r') as f:
         curr_doc = 1
         for label in f:
             if curr_doc not in seeds and curr_doc in pred_labels:
                 num_pred += 1
-                if int(label) == pred_labels[curr_doc][0]:
-                    num_correct += 1
+                if int(label) != pred_labels[curr_doc][0]:
+                    num_incorrect += 1
             curr_doc += 1
-    precision = float(num_correct) / num_pred
-    print '%s - precision: %.3f' % (junto_output_filename, precision)
+    error_rate = float(num_incorrect) / num_pred
+    print '%s - error_rate: %.3f' % (junto_output_filename, error_rate)
 
 if __name__ == '__main__':
     compare_to_true_labels('unhashed_output')

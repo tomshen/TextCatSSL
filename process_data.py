@@ -2,6 +2,7 @@ import os
 import math
 import csv
 import string
+import math
 import random
 
 from lsh import LSHasher
@@ -23,15 +24,17 @@ def process_hashed_dataset():
         DATA_SIZE / 100, 2)), 10000)) for i in xrange(NUM_HASHES)])
     print 'Hashers initialized'
     doc_features = {}
+    words_doc_count = [0 for i in xrange(NUM_FEATURES+1)]
     with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0])
-            word = int(row[1]) - 1
+            word = int(row[1])
             count = int(row[2])
+            words_doc_count[word] += 1
             if doc not in doc_features:
-                doc_features[doc] = [] # [0 for i in xrange(NUM_FEATURES)]
-            doc_features[doc].append(word) #[word] = count
+                doc_features[doc] = []
+            doc_features[doc].append((word, count))
     print 'Loaded doc features'
     signatures = {}
     for hl, h in hashers.items():
@@ -45,30 +48,29 @@ def process_hashed_dataset():
             datawriter = csv.writer(hashed, delimiter='\t')
             for row in datareader:
                 doc = int(row[0])
-                word = int(row[1]) - 1
+                word = int(row[1])
                 count = int(row[2])
                 for hl, s in signatures.items():
                     hashed_word = str(word) + hl + s[doc]
-                    weight = '1.0'
-                    datawriter.writerow([doc, hashed_word, weight])
+                    tfidf = math.log(count+1) * math.log(DATA_SIZE/float(words_doc_count[word]))
+                    datawriter.writerow([doc, hashed_word, tfidf])
 
 def process_baseline_dataset():
     test_data = []
-    max_count = 1 # if we want to weight the edges by word count
+    words_doc_count = [0 for i in xrange(NUM_FEATURES+1)]
     with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0])
-            word = int(row[1]) - 1
+            word = int(row[1])
             count = int(row[2])
-            if count > max_count:
-                max_count = float(count)
+            words_doc_count[word] += 1
             test_data.append([doc, word, count])
-
     with open(os.path.join(DATA_DIR, 'unhashed_test.data'), 'wb') as unhashed:
         datawriter = csv.writer(unhashed, delimiter='\t')
         for d,w,c in test_data:
-            datawriter.writerow([str(d), 'w' + str(w), '1.0'])
+            tfidf = math.log(c+1) * math.log(DATA_SIZE/float(words_doc_count[w]))
+            datawriter.writerow([str(d), 'w' + str(w), tfidf])
 
 def make_seeds(perc_seeds):
     labels = {}
