@@ -98,16 +98,15 @@ def process_knn_dataset(k=30):
     print('[%s]: Generated feature vectors' % str(datetime.now().time()))
 
     def cosine_similarity(u,v):
-        dot_product = float(sum((u[i] * v[i] for i in xrange(NUM_FEATURES))))
-        norm_u = math.sqrt(sum((x**2 for x in u)))
-        norm_v = math.sqrt(sum((x**2 for x in v)))
+        dot_product = float(sum([u[i] * v[i] for i in xrange(NUM_FEATURES)]))
+        norm_u = math.sqrt(sum([x**2 for x in u]))
+        norm_v = math.sqrt(sum([x**2 for x in v]))
         return dot_product / (norm_u * norm_v)
 
-    doc_similarity = {}
+    doc_similarity = dict([(doc,[]) for doc in test_data.keys()])
     edges = set([])
     graph_gen_counter = 0
     for docA, featA in test_data.items():
-        doc_similarity[docA] = []
         for docB, featB in test_data.items():
             cs = cosine_similarity(featA, featB)
             doc_similarity[docA].append((cs, docB))
