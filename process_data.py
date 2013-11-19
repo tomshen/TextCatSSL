@@ -7,6 +7,8 @@ import math
 import random
 from datetime import datetime
 
+import numpy as np
+
 from lsh import LSHasher
 
 """
@@ -76,54 +78,52 @@ def process_baseline_dataset():
 
 def process_knn_dataset(k=30):
     assert k < DATA_SIZE
-    test_data = {}
-    words_doc_count = [0 for i in xrange(NUM_FEATURES+1)]
+    feature_matrix = np.zeros((DATA_SIZE, NUM_FEATURES))
+    words_doc_count = np.zeros(NUM_FEATURES)
     with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
-            doc = int(row[0])
-            word = int(row[1])
+            doc = int(row[0]) - 1
+            word = int(row[1]) - 1
             count = int(row[2])
             words_doc_count[word] += 1
-            if doc not in test_data:
-                test_data[doc] = []
-            test_data[doc].append((word, count))
+            feature_matrix[doc][word] = count
     print('[%s]: Loaded test data.' % str(datetime.now().time()))
-    for doc, words in test_data.items():
-        features = [0 for i in xrange(NUM_FEATURES)]
-        for w,c in test_data[doc]:
-            tfidf = math.log(c+1) * math.log(DATA_SIZE/float(words_doc_count[w]))
-            features[w-1] = tfidf
-        test_data[doc] = features
-    print('[%s]: Generated feature vectors' % str(datetime.now().time()))
 
-    def cosine_similarity(u,v):
-        dot_product = float(sum([u[i] * v[i] for i in xrange(NUM_FEATURES)]))
-        norm_u = math.sqrt(sum([x**2 for x in u]))
-        norm_v = math.sqrt(sum([x**2 for x in v]))
-        return dot_product / (norm_u * norm_v)
+    print('[%s]: Generating feature matrix' % str(datetime.now().time()))
+    for doc in xrange(DATA_SIZE):
+        for word in xrange(NUM_FEATURES):
+            if words_doc_count[word] != 0:
+                count = feature_matrix[doc][word]
+                tfidf = math.log(count+1) * math.log(DATA_SIZE/float(words_doc_count[word]))
+                feature_matrix[doc][word] = tfidf
+        if doc % 10 == 9:
+            print('[%s]: Processed %d out of %d documents' % (str(datetime.now().time()),
+                (doc+1), DATA_SIZE))
+    print('[%s]: Generated feature matrix' % str(datetime.now().time()))
 
-    doc_similarity = dict([(doc,[]) for doc in test_data.keys()])
+    normalizing_matrix = np.zeros((DATA_SIZE, DATA_SIZE))
+    for i in xrange(DATA_SIZE):
+        normalizing_matrix[i][i] = 1.0 / math.sqrt(F[i] * F[i].transpose())
+
+    print('[%s]: Generated normalizing matrix' % str(datetime.now().time()))
+
+    print('[%s]: Generating folded graph' % str(datetime.now().time()))
     edges = set([])
-    graph_gen_counter = 0
-    for docA, featA in test_data.items():
-        for docB, featB in test_data.items():
-            cs = cosine_similarity(featA, featB)
-            doc_similarity[docA].append((cs, docB))
-            doc_similarity[docB].append((cs, docA))
-        doc_similarity[docA].sort(reverse=True)
-        for i in xrange(k):
-            similarity = doc_similarity[docA][i]
-            docB = similarity[0]
-            weight = similarity[1]
-            edge = (docA, docB) if docA < docB else (docB, docA)
-            edges.add((edge, weight))
-        graph_gen_counter += 1
-        if graph_gen_counter % 10 == 0:
-            print('[%s]: Processed %d of %d documents' % str(datetime.now().time()),
-                graph_gen_counter, DATA_SIZE)
-        test_data[docA] = None
-    print('[%s]: Generated k-NN graph' % str(datetime.now().time()))
+    for doc in xrange(DATA_SIZE):
+        v = np.zeros(DATA_SIZE)
+        v[doc] = 1
+        N = normalizing_matrix
+        F = feature_matrix
+        doc_weights = N * (F * (F.transpose() * (N * v)))
+        nearest_neighbors = np.argsort(doc_weights)[-k:]
+        for neighbor in nearest_neighbors:
+            # so that we don't have duplicate edges
+            edges.add(((min(doc+1, neighbor+1), max(doc+1, neighbor+1)), doc_weights[neighbor]))
+        if doc % 10 == 9:
+            print('[%s]: Processed %d out of %d documents' % (str(datetime.now().time()),
+                (doc+1), DATA_SIZE))
+    print('[%s]: Generated folded graph' % str(datetime.now().time()))
 
     with open(os.path.join(DATA_DIR, 'knn_test.data'), 'wb') as unhashed:
         datawriter = csv.writer(unhashed, delimiter='\t')
