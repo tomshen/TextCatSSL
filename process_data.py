@@ -1,6 +1,5 @@
 #!/usr/bin/python
 import os
-import math
 import csv
 import string
 import math
@@ -104,7 +103,7 @@ def process_knn_dataset(k=30):
 
     normalizing_matrix = np.zeros((DATA_SIZE, DATA_SIZE))
     for i in xrange(DATA_SIZE):
-        normalizing_matrix[i][i] = 1.0 / math.sqrt(F[i] * F[i].transpose())
+        normalizing_matrix[i][i] = 1.0 / math.sqrt(feature_matrix[i] * feature_matrix[i].transpose())
 
     print('[%s]: Generated normalizing matrix' % str(datetime.now().time()))
 
