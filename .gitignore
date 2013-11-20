@@ -1,5 +1,7 @@
 data/
 lib/
+out/
+config/
 
 ### Java ###
 *.class

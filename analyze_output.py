@@ -3,10 +3,11 @@ import os
 import csv
 
 DATA_DIR = os.path.join('data', '20_newsgroups')
+OUTPUT_DIR = 'out'
 
 def get_pred_labels(junto_output_filename):
     pred_labels = {}
-    with open(os.path.join(DATA_DIR, junto_output_filename), 'rb') as f:
+    with open(os.path.join(OUTPUT_DIR, junto_output_filename), 'rb') as f:
         datareader = csv.reader(f, delimiter='\t')
         for row in datareader:
             try:
@@ -49,7 +50,3 @@ def compare_to_true_labels(junto_output_filename):
             curr_doc += 1
     error_rate = float(num_incorrect) / num_pred
     print '%s - error_rate: %.3f' % (junto_output_filename, error_rate)
-
-if __name__ == '__main__':
-    compare_to_true_labels('unhashed_output')
-    compare_to_true_labels('hashed_output')
