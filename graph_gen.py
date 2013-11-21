@@ -130,8 +130,7 @@ def generate_knn_graph(k=10, verbose=False):
         nearest_neighbors = [i for i in np.argsort(doc_weights)[-k:]]
         for neighbor in nearest_neighbors:
             # so that we don't have duplicate edges
-            edges.add(((min(doc+1, neighbor+1), max(doc+1, neighbor+1)),
-                doc_weights[neighbor]))
+            edges.append(((doc+1, neighbor+1), doc_weights.item(neighbor)))
         if doc % 10 == 9:
             if verbose: print('[%s]: Processed %d out of %d documents' % (
                 str(datetime.now().time()), (doc+1), NUM_DOCS))
