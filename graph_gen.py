@@ -88,7 +88,7 @@ def generate_baseline_graph():
 
 def generate_knn_graph(k=10, verbose=False):
     assert k < NUM_DOCS
-    feature_matrix = np.zeros((NUM_DOCS, NUM_FEATURES))
+    feature_matrix = np.matrix(np.zeros((DATA_SIZE, NUM_FEATURES)))
     words_doc_count = np.zeros(NUM_FEATURES)
     with open(os.path.join(DATA_DIR, TEST_DATA), 'rb') as data:
         datareader = csv.reader(data, delimiter=' ')
@@ -104,35 +104,37 @@ def generate_knn_graph(k=10, verbose=False):
     for doc in xrange(NUM_DOCS):
         for word in xrange(NUM_FEATURES):
             if words_doc_count[word] != 0:
-                count = feature_matrix[doc][word]
+                count = feature_matrix.item((doc,word))
                 tfidf = math.log(count+1) * math.log(NUM_DOCS/float(words_doc_count[word]))
-                feature_matrix[doc][word] = tfidf
+                feature_matrix.itemset((doc,word), tfidf)
         if doc % 10 == 9:
             if verbose: print('[%s]: Processed %d out of %d documents' % (str(datetime.now().time()),
                 (doc+1), NUM_DOCS))
     if verbose: print('[%s]: Generated feature matrix' % str(datetime.now().time()))
 
-    normalizing_matrix = np.zeros((NUM_DOCS, NUM_DOCS))
+    normalizing_matrix = np.matrix(np.zeros((NUM_DOCS, NUM_DOCS)))
     for i in xrange(NUM_DOCS):
-        normalizing_matrix[i][i] = 1.0 / math.sqrt(feature_matrix[i] * feature_matrix[i].transpose())
-
+        f = feature_matrix[i]
+        normalizing_matrix.itemset((i,i), 1.0 / math.sqrt(f * f.transpose()))
     if verbose: print('[%s]: Generated normalizing matrix' % str(datetime.now().time()))
 
     if verbose: print('[%s]: Generating folded graph' % str(datetime.now().time()))
-    edges = set([])
+    edges = []
+    N = normalizing_matrix
+    F = feature_matrix
     for doc in xrange(NUM_DOCS):
-        v = np.zeros(NUM_DOCS)
-        v[doc] = 1
-        N = normalizing_matrix
-        F = feature_matrix
-        doc_weights = N * (F * (F.transpose() * (N * v)))
-        nearest_neighbors = np.argsort(doc_weights)[-k:]
+        Nv = np.matrix(np.zeros((NUM_DOCS,1)))
+        Nv.itemset(doc, N.item((doc, doc)))
+        FtNv = F[doc].transpose() * N.item((doc,doc))
+        doc_weights = array(N * (F * FtNv)).transpose()
+        nearest_neighbors = [i for i in np.argsort(doc_weights)[-k:]]
         for neighbor in nearest_neighbors:
             # so that we don't have duplicate edges
-            edges.add(((min(doc+1, neighbor+1), max(doc+1, neighbor+1)), doc_weights[neighbor]))
+            edges.add(((min(doc+1, neighbor+1), max(doc+1, neighbor+1)),
+                doc_weights[neighbor]))
         if doc % 10 == 9:
-            if verbose: print('[%s]: Processed %d out of %d documents' % (str(datetime.now().time()),
-                (doc+1), NUM_DOCS))
+            if verbose: print('[%s]: Processed %d out of %d documents' % (
+                str(datetime.now().time()), (doc+1), NUM_DOCS))
     if verbose: print('[%s]: Generated folded graph' % str(datetime.now().time()))
 
     with open(os.path.join(DATA_DIR, 'test-knn-k%d.data' % k), 'wb') as unhashed:
