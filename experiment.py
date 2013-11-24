@@ -3,6 +3,7 @@ import os
 import subprocess
 
 from graph_gen import *
+from analyze_output import *
 
 OUTPUT_DIR = 'out'
 CONFIG_DIR = 'config'
@@ -22,12 +23,10 @@ def generate_graphs():
             generate_lsh_graph(h,b)
             print('Generated LSH graph with %d hashes of %d bits' % (h,b))
     print('Generated LSH graphs')
-    '''
-    for k in num_nearest_neighbors:
-        generate_knn_graph(k)
-        print('Generated %d-NN graph' % k)
+
+    generate_knn_graphs(num_nearest_neighbors)
     print('Generated k-NN graphs')
-    '''
+
 default_config = {
     'data_format': 'edge_factored',
     'iters': '10',
@@ -60,10 +59,10 @@ def prepare_for_propagation():
     for h in num_hashes:
         for b in num_bits:
             make_junto_config('test-lsh-h%db%d.data' % (h,b))
-    '''
+
     for k in num_nearest_neighbors:
         make_junto_config('test-knn-k%d.data' % k)
-    '''
+
     print('Made junto config files')
 
 def propagate_labels():
@@ -82,13 +81,20 @@ def propagate_labels():
             run_junto('test-lsh-h%db%d.config' % (h,b))
             print('Propagated labels on LSH graph with %d hashes of %d bits' % (h,b))
     print('Propagated labels on LSH graphs')
-    '''
+
     for k in num_nearest_neighbors:
         run_junto('test-knn-k%d.config' % k)
         print('Propagated labels on %d-NN graph' % k)
     print('Propagated labels on kNN graphs')
-    '''
+
+def analyze_outputs():
+    with open('results.txt', 'w') as f:
+        output_files = os.listdir()
+        for output_file in output_files:
+            f.write(compare_to_true_labels(output_file) + '\n')
+
 if __name__ == '__main__':
     generate_graphs()
     prepare_for_propagation()
     propagate_labels()
+    analyze_outputs()

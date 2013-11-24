@@ -50,7 +50,9 @@ def compare_to_true_labels(junto_output_filename):
                     num_incorrect += 1
             curr_doc += 1
     error_rate = float(num_incorrect) / num_pred
-    print '%s - error_rate: %.3f' % (junto_output_filename, error_rate)
+    info = '%s - error_rate: %.3f' % (junto_output_filename, error_rate)
+    print(info)
+    return info
 
 if __name__ == '__main__':
     compare_to_true_labels(sys.argv[1])
