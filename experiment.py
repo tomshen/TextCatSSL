@@ -15,6 +15,7 @@ perc_seeds = [0.01,0.02,0.05,0.10]
 num_nearest_neighbors = [5,10,20,30,50,100]
 
 def generate_graphs():
+    '''
     generate_baseline_graph()
     print('Generated baseline graph')
 
@@ -23,8 +24,8 @@ def generate_graphs():
             generate_lsh_graph(h,b)
             print('Generated LSH graph with %d hashes of %d bits' % (h,b))
     print('Generated LSH graphs')
-
-    generate_knn_graphs(num_nearest_neighbors)
+    '''
+    generate_knn_graphs(num_nearest_neighbors, True)
     print('Generated k-NN graphs')
 
 default_config = {

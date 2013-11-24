@@ -132,7 +132,7 @@ def generate_knn_graph(k=10, verbose=False):
         for neighbor in nearest_neighbors[0]:
             if doc_weights.item(neighbor) < 1e-9:
                 continue
-          edges.append(((doc+1, int(neighbor)+1), doc_weights.item(neighbor)))
+            edges.append(((doc+1, int(neighbor)+1), doc_weights.item(neighbor)))
         if doc % 10 == 9:
             if verbose: print('[%s]: Processed %d out of %d documents' % (
                 str(datetime.now().time()), (doc+1), NUM_DOCS))
@@ -149,6 +149,7 @@ def generate_knn_graphs(ks=[5,10,20,30,50,100], verbose=False):
     it makes more sense to iterate through the different k's within
     the function rather than outside it
     '''
+    max_k = max(ks)
     feature_matrix = np.matrix(np.zeros((NUM_DOCS, NUM_FEATURES)))
     words_doc_count = np.zeros(NUM_FEATURES)
     with open(os.path.join(DATA_DIR, TEST_DATA), 'rb') as data:
@@ -180,7 +181,7 @@ def generate_knn_graphs(ks=[5,10,20,30,50,100], verbose=False):
     if verbose: print('[%s]: Generated normalizing matrix' % str(datetime.now().time()))
 
     if verbose: print('[%s]: Generating folded graph' % str(datetime.now().time()))
-    k_edges = dict([(k,[]) for k in ks])
+    doc_neighbors = {}
     N = normalizing_matrix
     F = feature_matrix
     for doc in xrange(NUM_DOCS):
@@ -188,12 +189,8 @@ def generate_knn_graphs(ks=[5,10,20,30,50,100], verbose=False):
         Nv.itemset(doc, N.item((doc, doc)))
         FtNv = F[doc].transpose() * N.item((doc,doc))
         doc_weights = np.array(N * (F * FtNv)).transpose()
-        for k in ks:
-            nearest_neighbors = np.argsort(doc_weights)[-k:]
-            for neighbor in nearest_neighbors[0]:
-                if doc_weights.item(neighbor) < 1e-9:
-                    continue
-              k_edges[k].append(((doc+1, int(neighbor)+1), doc_weights.item(neighbor)))
+        neighbors = np.argsort(doc_weights)
+        doc_neighbors[doc] = [(neighbor, doc_weights.item(neighbor)) for neighbor in neighbors[-max_k:]]
         if doc % 10 == 9:
             if verbose: print('[%s]: Processed %d out of %d documents' % (
                 str(datetime.now().time()), (doc+1), NUM_DOCS))
@@ -202,9 +199,11 @@ def generate_knn_graphs(ks=[5,10,20,30,50,100], verbose=False):
     for k in ks:
         with open(os.path.join(DATA_DIR, 'test-knn-k%d.data' % k), 'wb') as unhashed:
             datawriter = csv.writer(unhashed, delimiter='\t')
-            for edge, weight in k_edges[k]:
-                datawriter.writerow([edge[0], edge[1], weight])
-
+            for doc in xrange(NUM_DOCS):
+                for neighbor,weight in doc_neighbors[doc][-k:]:
+                    if weight >= 1e-9:
+                        datawriter.writerow([str(doc+1), str(neighbor+1), weight])
+            print('[%s] Wrote data for %d-NN' % str(datetime.now().time()), k)
 def make_seeds(perc_seeds=0.1):
     labels = {}
     with open(os.path.join(DATA_DIR, 'test.label'), 'r') as f:
