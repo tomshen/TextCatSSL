@@ -88,7 +88,7 @@ def generate_baseline_graph():
 
 def generate_knn_graph(k=10, verbose=False):
     assert k < NUM_DOCS
-    feature_matrix = np.matrix(np.zeros((DATA_SIZE, NUM_FEATURES)))
+    feature_matrix = np.matrix(np.zeros((NUM_DOCS, NUM_FEATURES)))
     words_doc_count = np.zeros(NUM_FEATURES)
     with open(os.path.join(DATA_DIR, TEST_DATA), 'rb') as data:
         datareader = csv.reader(data, delimiter=' ')
@@ -97,7 +97,7 @@ def generate_knn_graph(k=10, verbose=False):
             word = int(row[1]) - 1
             count = int(row[2])
             words_doc_count[word] += 1
-            feature_matrix[doc][word] = count
+            feature_matrix.itemset((doc,word), count)
     if verbose: print('[%s]: Loaded test data.' % str(datetime.now().time()))
 
     if verbose: print('[%s]: Generating feature matrix' % str(datetime.now().time()))
@@ -126,11 +126,13 @@ def generate_knn_graph(k=10, verbose=False):
         Nv = np.matrix(np.zeros((NUM_DOCS,1)))
         Nv.itemset(doc, N.item((doc, doc)))
         FtNv = F[doc].transpose() * N.item((doc,doc))
-        doc_weights = array(N * (F * FtNv)).transpose()
-        nearest_neighbors = [i for i in np.argsort(doc_weights)[-k:]]
-        for neighbor in nearest_neighbors:
-            # so that we don't have duplicate edges
-            edges.append(((doc+1, neighbor+1), doc_weights.item(neighbor)))
+        doc_weights = np.array(N * (F * FtNv)).transpose()
+        nearest_neighbors = np.argsort(doc_weights)[-k:]
+        print(nearest_neighbors, nearest_neighbors[0])
+        for neighbor in nearest_neighbors[0]:
+            if doc_weights.item(neighbor) < 1e-9:
+                continue
+          edges.append(((doc+1, int(neighbor)+1), doc_weights.item(neighbor)))
         if doc % 10 == 9:
             if verbose: print('[%s]: Processed %d out of %d documents' % (
                 str(datetime.now().time()), (doc+1), NUM_DOCS))
@@ -159,3 +161,6 @@ def make_seeds(perc_seeds=0.1):
         for label, docs in labels.items():
             for doc in docs:
                 f.write(str(doc) + '\t' + str(label) + '\t1.0\n')
+
+if __name__ == '__main__':
+    generate_knn_graph(10, True)

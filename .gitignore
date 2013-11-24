@@ -1,8 +1,8 @@
-data/
-lib/
-out/
-config/
-
+data
+lib
+out
+config
+venv
 ### Java ###
 *.class
 

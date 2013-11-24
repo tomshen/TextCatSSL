@@ -22,12 +22,12 @@ def generate_graphs():
             generate_lsh_graph(h,b)
             print('Generated LSH graph with %d hashes of %d bits' % (h,b))
     print('Generated LSH graphs')
-
+    '''
     for k in num_nearest_neighbors:
         generate_knn_graph(k)
         print('Generated %d-NN graph' % k)
     print('Generated k-NN graphs')
-
+    '''
 default_config = {
     'data_format': 'edge_factored',
     'iters': '10',
@@ -59,10 +59,11 @@ def prepare_for_propagation():
 
     for h in num_hashes:
         for b in num_bits:
-            make_junto_config('test-lsh-h%d-b%d.data' % (h,b))
-
+            make_junto_config('test-lsh-h%db%d.data' % (h,b))
+    '''
     for k in num_nearest_neighbors:
         make_junto_config('test-knn-k%d.data' % k)
+    '''
     print('Made junto config files')
 
 def propagate_labels():
@@ -78,11 +79,16 @@ def propagate_labels():
 
     for h in num_hashes:
         for b in num_bits:
-            run_junto('test-lsh-h%d-b%d.config' % (h,b))
+            run_junto('test-lsh-h%db%d.config' % (h,b))
             print('Propagated labels on LSH graph with %d hashes of %d bits' % (h,b))
     print('Propagated labels on LSH graphs')
-
+    '''
     for k in num_nearest_neighbors:
         run_junto('test-knn-k%d.config' % k)
         print('Propagated labels on %d-NN graph' % k)
     print('Propagated labels on kNN graphs')
+    '''
+if __name__ == '__main__':
+    generate_graphs()
+    prepare_for_propagation()
+    propagate_labels()
