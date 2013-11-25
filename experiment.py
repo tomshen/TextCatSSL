@@ -90,9 +90,9 @@ def propagate_labels():
 
 def analyze_outputs():
     with open('results.txt', 'w') as f:
-        output_files = os.listdir()
+        output_files = os.listdir(OUTPUT_DIR)
         for output_file in output_files:
-            f.write(compare_to_true_labels(output_file) + '\n')
+            f.write(compare_to_true_labels(os.path.join(OUTPUT_DIR, output_file)) + '\n')
 
 if __name__ == '__main__':
     generate_graphs()
