@@ -189,7 +189,7 @@ def generate_knn_graphs(ks=[5,10,20,30,50,100], verbose=False):
         Nv.itemset(doc, N.item((doc, doc)))
         FtNv = F[doc].transpose() * N.item((doc,doc))
         doc_weights = np.array(N * (F * FtNv)).transpose()
-        neighbors = np.argsort(doc_weights)
+        neighbors = np.argsort(doc_weights)[0]
         doc_neighbors[doc] = [(neighbor, doc_weights.item(neighbor)) for neighbor in neighbors[-max_k:]]
         if doc % 10 == 9:
             if verbose: print('[%s]: Processed %d out of %d documents' % (
@@ -203,7 +203,7 @@ def generate_knn_graphs(ks=[5,10,20,30,50,100], verbose=False):
                 for neighbor,weight in doc_neighbors[doc][-k:]:
                     if weight >= 1e-9:
                         datawriter.writerow([str(doc+1), str(neighbor+1), weight])
-            print('[%s] Wrote data for %d-NN' % str(datetime.now().time()), k)
+            print('[%s] Wrote data for %d-NN' % (str(datetime.now().time()), k))
 def make_seeds(perc_seeds=0.1):
     labels = {}
     with open(os.path.join(DATA_DIR, 'test.label'), 'r') as f:
