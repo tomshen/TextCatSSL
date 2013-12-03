@@ -3,6 +3,8 @@ lib
 out
 config
 venv
+*.json
+
 ### Java ###
 *.class
 
