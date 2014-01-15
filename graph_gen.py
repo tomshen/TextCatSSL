@@ -217,11 +217,11 @@ def make_seeds(perc_seeds=0.1):
     with open(os.path.join(DATA_DIR, 'seeds.data'), 'w') as f:
         for label, docs in labels.items():
             for doc in random.sample(docs, int(len(docs) * perc_seeds)): # take perc_seeds of labels
-                f.write(str(doc) + '\t' + str(label) + '\t1.0\n')
+                f.write(str(doc) + '\t' + str(label) + '\t%d\n' % NUM_DOCS)
     with open(os.path.join(DATA_DIR, 'gold.data'), 'w') as f:
         for label, docs in labels.items():
             for doc in docs:
-                f.write(str(doc) + '\t' + str(label) + '\t1.0\n')
+                f.write(str(doc) + '\t' + str(label) + '\t%d\n' % NUM_DOCS)
 
 if __name__ == '__main__':
     generate_knn_graph(10, True)

@@ -1,6 +1,36 @@
 import random
 import sys
 import hashlib
+import string
+import multiprocessing
+
+def _LSHasher_compute_stream(h):
+    h[0][1].compute_stream(h[1])
+    return h[0]
+
+def _LSHasher_compute_signatures(h):
+    return h[0], h[1].compute_signatures()
+
+class MultiLSHasher(object):
+    def __init__(self, num_hashes, num_bits):
+        self.num_hashes = num_hashes
+        self.hashers = [(string.ascii_lowercase[i], LSHasher(num_bits))
+            for i in xrange(num_hashes)]
+
+    def compute_stream(self, doc_features):
+        process_pool = multiprocessing.Pool(processes=self.num_hashes)
+        self.hashers = process_pool.map(_LSHasher_compute_stream, [
+            (self.hashers[i], doc_features)
+            for i in xrange(len(self.hashers))])
+        process_pool.close()
+        process_pool.join()
+
+    def compute_signatures(self):
+        process_pool = multiprocessing.Pool(processes=self.num_hashes)
+        sigs = dict(process_pool.map(_LSHasher_compute_signatures, self.hashers))
+        process_pool.close()
+        process_pool.join()
+        return sigs
 
 class LSHasher(object):
     """
