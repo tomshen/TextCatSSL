@@ -16,6 +16,36 @@ TEST_DATA = 'test.data'
 NUM_DOCS = 7505
 NUM_FEATURES = 61188
 
+def gen_lsh(num_hashes, num_bits, verbose=True):
+    # first hash labelled 'a', second labelled 'b', etc
+    hashers = MultiLSHasher(num_hashes, num_bits)
+    print '%d hashes, %d bits' % (num_hashes, num_bits)
+    if verbose: print 'Hashers initialized'
+    doc_features = {}
+    words_doc_count = [0 for i in xrange(NUM_FEATURES+1)]
+    with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
+        datareader = csv.reader(data, delimiter=' ')
+        for row in datareader:
+            doc = int(row[0])
+            word = int(row[1])
+            count = int(row[2])
+            words_doc_count[word] += 1
+            if doc not in doc_features:
+                doc_features[doc] = []
+            doc_features[doc].append((word, count))
+    if verbose: print 'Loaded doc features'
+    hashers.compute_stream(doc_features)
+    signatures = hashers.compute_signatures()
+    if verbose: print 'Computed signatures'
+    hd = {}
+    for hl, s in signatures.items():
+        for doc, sig in s.items():
+            h = hl + sig
+            if h not in hd:
+                hd[h] = 0
+            hd[h] += 1
+    return hd
+
 def generate_lsh_graph(num_hashes=3, num_bits=5, verbose=False):
     # first hash labelled 'a', second labelled 'b', etc
     hashers = MultiLSHasher(num_hashes, num_bits)
@@ -57,11 +87,15 @@ def generate_lsh_graph(num_hashes=3, num_bits=5, verbose=False):
                         hw_doc[hashed_word] = []
                     hw_doc[hashed_word].append([doc, tfidf])
                     datawriter.writerow([doc, hashed_word, tfidf])
+
     with open('debug-lsh.json', 'wb') as f:
         json.dump(hw_doc, f, indent=4, separators=(',', ': '))
+    '''
     with open('debug2-lsh.json', 'wb') as f:
         json.dump(doc_hw, f, indent=4, separators=(',', ': '))
-generate_lsh_graph(10,2,True)
+    '''
+    return hw_doc
+# generate_lsh_graph(10,2,True)
 
 def generate_baseline_graph():
     test_data = []
@@ -86,11 +120,12 @@ def generate_baseline_graph():
             tfidf = math.log(c+1) * math.log(NUM_DOCS/float(words_doc_count[w]))
             doc_hw[d].append([w, tfidf])
             hw_doc[w].append([d, tfidf])
-            # datawriter.writerow([str(d), 'w' + str(w), tfidf])
+            datawriter.writerow([str(d), 'w' + str(w), tfidf])
     with open('debug.json', 'wb') as f:
         json.dump(hw_doc, f, indent=4, separators=(',', ': '))
     with open('debug2.json', 'wb') as f:
         json.dump(doc_hw, f, indent=4, separators=(',', ': '))
+    return hw_doc
 # generate_baseline_graph()
 '''
 with open('debug-lsh.json', 'r') as f1:

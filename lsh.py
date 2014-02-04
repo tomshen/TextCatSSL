@@ -87,8 +87,12 @@ class LSHasher(object):
     def compute_signatures(self):
         """Generate bit string signatures for each document"""
         signatures = {}
+
+        # calculating threshold takes 0.6 extra seconds per fp_array
+        # fs = [f for fp_array in self.dot_products.values() for f in fp_array]
+        # threshold = sorted(fs)[len(fs)/2]
         for doc, fp_array in self.dot_products.items():
-            signatures[doc] = ''.join(['0' if f <= 0 else '1' for f in fp_array])
+            signatures[doc] = ''.join(['0' if f <= threshold else '1' for f in fp_array])
         return signatures
 
 def test_LSHasher():

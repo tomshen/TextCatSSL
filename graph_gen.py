@@ -224,4 +224,4 @@ def make_seeds(perc_seeds=0.1):
                 f.write(str(doc) + '\t' + str(label) + '\t%d\n' % NUM_DOCS)
 
 if __name__ == '__main__':
-    generate_knn_graph(10, True)
+    generate_lsh_graph(1,7,True)
