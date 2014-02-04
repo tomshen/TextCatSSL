@@ -1,8 +1,7 @@
-import random
-import sys
-import hashlib
-import string
 import multiprocessing
+import random
+import string
+import sys
 
 def _LSHasher_compute_stream(h):
     h[0][1].compute_stream(h[1])
@@ -11,7 +10,7 @@ def _LSHasher_compute_stream(h):
 def _LSHasher_compute_signatures(h):
     return h[0], h[1].compute_signatures()
 
-class MultiLSHasher(object):
+class MultiLSHasher:
     def __init__(self, num_hashes, num_bits):
         self.num_hashes = num_hashes
         self.hashers = [(string.ascii_lowercase[i], LSHasher(num_bits))
@@ -32,7 +31,7 @@ class MultiLSHasher(object):
         process_pool.join()
         return sigs
 
-class LSHasher(object):
+class LSHasher:
     """
     Implements streaming locality-sensitive hashing as defined by Van Durme
     and Lall (2010)[http://personal.denison.edu/~lalla/online-lsh.pdf].
@@ -91,30 +90,7 @@ class LSHasher(object):
         # calculating threshold takes 0.6 extra seconds per fp_array
         # fs = [f for fp_array in self.dot_products.values() for f in fp_array]
         # threshold = sorted(fs)[len(fs)/2]
+        threshold = 0.0
         for doc, fp_array in self.dot_products.items():
             signatures[doc] = ''.join(['0' if f <= threshold else '1' for f in fp_array])
         return signatures
-
-def test_LSHasher():
-    test_map = {
-        'foo': [1,2,3,4],
-        'bar': [18,17,16,15],
-        'qux': [1,2,3,7]
-    }
-    hasherA = LSHasher(3)
-    hasherB = LSHasher(5)
-
-    """
-    Note that hasherA and hasherB will produce different hashes because each
-    has a different seed and a different set of random values drawn from
-    Normal(0,1).
-    """
-
-    hasherA.compute_stream(test_map)
-    hasherB.compute_stream(test_map)
-
-    print 'Hasher A:', hasherA.compute_signatures()
-    print 'Hasher B:', hasherB.compute_signatures()
-
-if __name__ == '__main__':
-    test_LSHasher()

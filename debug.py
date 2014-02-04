@@ -1,20 +1,17 @@
-#!/usr/bin/python
-import os
+#!/usr/bin/env python
 import csv
-import string
-import math
-import random
-from datetime import datetime
-import json
+import os
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
 
-from lsh import LSHasher, MultiLSHasher
+import config
+from lsh import MultiLSHasher
+import util
 
-DATA_DIR = os.path.join('data', '20_newsgroups')
-TEST_DATA = 'test.data'
-NUM_DOCS = 7505
-NUM_FEATURES = 61188
+data_set = '20NG'
 
 def gen_lsh(num_hashes, num_bits, verbose=True):
     # first hash labelled 'a', second labelled 'b', etc
@@ -22,8 +19,8 @@ def gen_lsh(num_hashes, num_bits, verbose=True):
     print '%d hashes, %d bits' % (num_hashes, num_bits)
     if verbose: print 'Hashers initialized'
     doc_features = {}
-    words_doc_count = [0 for i in xrange(NUM_FEATURES+1)]
-    with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
+    words_doc_count = [0 for i in xrange(util.get_num_features(data_set)+1)]
+    with util.open_data_file(data_set) as data:
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0])
@@ -46,103 +43,24 @@ def gen_lsh(num_hashes, num_bits, verbose=True):
             hd[h] += 1
     return hd
 
-def generate_lsh_graph(num_hashes=3, num_bits=5, verbose=False):
-    # first hash labelled 'a', second labelled 'b', etc
-    hashers = MultiLSHasher(num_hashes, num_bits)
-    if verbose: print 'Hashers initialized'
-    doc_features = {}
-    words_doc_count = [0 for i in xrange(NUM_FEATURES+1)]
-    with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
-        datareader = csv.reader(data, delimiter=' ')
-        for row in datareader:
-            doc = int(row[0])
-            word = int(row[1])
-            count = int(row[2])
-            words_doc_count[word] += 1
-            if doc not in doc_features:
-                doc_features[doc] = []
-            doc_features[doc].append((word, count))
-    if verbose: print 'Loaded doc features'
-    hashers.compute_stream(doc_features)
-    signatures = hashers.compute_signatures()
-    if verbose: print 'Computed signatures'
-    hw_doc = {}
-    doc_hw = {}
-    with open(os.path.join(DATA_DIR, 'test.data'), 'rb') as data:
-        filename = 'test-lsh-h%db%d.data' % (num_hashes, num_bits)
-        with open(os.path.join(DATA_DIR, filename), 'wb') as hashed:
-            datareader = csv.reader(data, delimiter=' ')
-            datawriter = csv.writer(hashed, delimiter='\t')
-            for row in datareader:
-                doc = int(row[0])
-                word = int(row[1])
-                count = int(row[2])
-                if doc not in doc_hw:
-                    doc_hw[doc] = []
-                for hl, s in signatures.items():
-                    hashed_word = str(word) + hl + s[doc]
-                    tfidf = math.log(count+1) * math.log(NUM_DOCS/float(words_doc_count[word]))
-                    doc_hw[doc].append([hashed_word, tfidf])
-                    if hashed_word not in hw_doc:
-                        hw_doc[hashed_word] = []
-                    hw_doc[hashed_word].append([doc, tfidf])
-                    datawriter.writerow([doc, hashed_word, tfidf])
+def plot_graphs_cdf(h,b):
+    data = gen_lsh(h,b)
+    X = list(data.values())
+    plt.hist(X, bins=max(X), cumulative=True)
+    plt.savefig(os.path.join(config.OUTPUT_DIR, 'img/lsh-h%db%d-cdf' % (h,b)))
+    plt.clf()
 
-    with open('debug-lsh.json', 'wb') as f:
-        json.dump(hw_doc, f, indent=4, separators=(',', ': '))
-    '''
-    with open('debug2-lsh.json', 'wb') as f:
-        json.dump(doc_hw, f, indent=4, separators=(',', ': '))
-    '''
-    return hw_doc
-# generate_lsh_graph(10,2,True)
+def plot_graphs(h,b):
+    data = gen_lsh(h,b)
+    X = list(data.values())
+    plt.hist(X, bins=max([1,sum(X)/10]))
+    print 'Average: %f' % (sum(X) / len(X))
+    print data
+    plt.savefig(os.path.join(config.OUTPUT_DIR, 'img/lsh-h%db%d' % (h,b)))
+    plt.clf()
 
-def generate_baseline_graph():
-    test_data = []
-    words_doc_count = [0 for i in xrange(NUM_FEATURES+1)]
-    with open(os.path.join(DATA_DIR, TEST_DATA), 'rb') as data:
-        datareader = csv.reader(data, delimiter=' ')
-        for row in datareader:
-            doc = int(row[0])
-            word = int(row[1])
-            count = int(row[2])
-            words_doc_count[word] += 1
-            test_data.append([doc, word, count])
-    hw_doc = {}
-    doc_hw = {}
-    with open(os.path.join(DATA_DIR, 'test-baseline.data'), 'wb') as unhashed:
-        datawriter = csv.writer(unhashed, delimiter='\t')
-        for d,w,c in test_data:
-            if d not in doc_hw:
-                doc_hw[d] = []
-            if w not in hw_doc:
-                hw_doc[w] = []
-            tfidf = math.log(c+1) * math.log(NUM_DOCS/float(words_doc_count[w]))
-            doc_hw[d].append([w, tfidf])
-            hw_doc[w].append([d, tfidf])
-            datawriter.writerow([str(d), 'w' + str(w), tfidf])
-    with open('debug.json', 'wb') as f:
-        json.dump(hw_doc, f, indent=4, separators=(',', ': '))
-    with open('debug2.json', 'wb') as f:
-        json.dump(doc_hw, f, indent=4, separators=(',', ': '))
-    return hw_doc
-# generate_baseline_graph()
-'''
-with open('debug-lsh.json', 'r') as f1:
-    with open('debug2-lsh.json', 'r') as f2:
-        hwd = json.load(f1)
-        dhw = json.load(f2)
-        print('Average neighborhood size: ' + str(float(sum([len(docs) for docs in hwd.values()])) / len(hwd)))
-        num_neighbors = []
-        for d, hws in dhw.items():
-            neighbors = set([int(d)])
-            # hws = sorted(hws, key=lambda hw: hw[1])
-            for hwtf in hws:
-                hw = hwtf[0]
-                tf = hwtf[1]
-                for doc,tf in hwd[str(hw)]:
-                    neighbors.add(doc)
-            print('%d [%d / %s]: %s' % (doc, len(neighbors), str([len(hwd[str(hw[0])]) for hw in hws]), str(neighbors)))
-            num_neighbors.append(len(neighbors))
-        print('Average neighborhood size: ' + str(float(sum(num_neighbors)) / len(num_neighbors)))
-'''
+if __name__ == '__main__':
+    for h in [1,3,5]:
+        for b in [1,2,3,4,5,8,10]:
+            plot_graphs(h,b)
+            plot_graphs_cdf(h,b)

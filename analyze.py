@@ -1,14 +1,12 @@
-#!/usr/bin/python
 import os
 import csv
 import sys
 
-DATA_DIR = os.path.join('data', '20_newsgroups')
-OUTPUT_DIR = 'out'
+import util
 
-def get_pred_labels(junto_output_filename):
+def get_pred_labels(graph_file):
     pred_labels = {}
-    with open(junto_output_filename, 'rb') as f:
+    with util.open_output_file(graph_file) as f:
         datareader = csv.reader(f, delimiter='\t')
         for row in datareader:
             try:
@@ -27,21 +25,22 @@ def get_pred_labels(junto_output_filename):
                 continue
     return pred_labels
 
-def get_seeds():
-    with open(os.path.join(DATA_DIR, 'seeds.data'), 'rb') as f:
+def get_seeds(data_set):
+    with util.open_seeds_file(data_set) as f:
         datareader = csv.reader(f, delimiter='\t')
         return set([int(row[0]) for row in datareader])
 
 def calculate_f1_score(precision, recall):
     return 2.0 * (precision * recall) / (precision + recall)
 
-def compare_to_true_labels(junto_output_filename):
-    pred_labels = get_pred_labels(junto_output_filename)
-    seeds = get_seeds()
+def compare_to_true_labels(graph_file):
+    pred_labels = get_pred_labels(graph_file)
+    data_set = graph_file.split('-')[0]
+    seeds = get_seeds(data_set)
     true_labels = {}
     num_pred = 0
     num_incorrect = 0
-    with open(os.path.join(DATA_DIR, 'test.label'), 'r') as f:
+    with util.open_label_file(data_set) as f:
         curr_doc = 1
         for label in f:
             if curr_doc not in seeds and curr_doc in pred_labels:
@@ -50,9 +49,4 @@ def compare_to_true_labels(junto_output_filename):
                     num_incorrect += 1
             curr_doc += 1
     error_rate = float(num_incorrect) / num_pred
-    info = '%s - error_rate: %.3f' % (junto_output_filename, error_rate)
-    print(info)
-    return info
-
-if __name__ == '__main__':
-    compare_to_true_labels(sys.argv[1])
+    print '%s - error_rate: %.3f' % (graph_file, error_rate)
