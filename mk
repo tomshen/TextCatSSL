@@ -56,7 +56,13 @@ def clean():
     for d in dirs:
         print 'Deleting all files in %s...' % d,
         for f in os.listdir(d):
-            os.remove(os.path.join(d, f))
+            try:
+                os.remove(os.path.join(d, f))
+            except:
+                d2 = os.path.join(d, f)
+                if os.path.isdir(d2):
+                    for f in os.listdir(d2):
+                        os.remove(os.path.join(d2, f))
         print 'Done.'
 
 def main():
