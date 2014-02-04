@@ -18,4 +18,6 @@ rm -rf tmp
 
 cd lib
 git clone https://github.com/parthatalukdar/junto
-cd ..
+cd junto
+bin/build update compile
+cd ../..
