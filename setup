@@ -10,9 +10,9 @@ mkdir tmp
 cd tmp
 wget http://qwone.com/~jason/20Newsgroups/20news-bydate-matlab.tgz
 tar xf 20news-bydate-matlab.tgz
-cp 20news-bydate-matlab/test.data ../data/20NG.data
-cp 20news-bydate-matlab/test.label ../data/20NG.label
-cp 20news-bydate-matlab/test.map ../data/20NG.map
+cp 20news-bydate/matlab/test.data ../data/20NG.data
+cp 20news-bydate/matlab/test.label ../data/20NG.label
+cp 20news-bydate/matlab/test.map ../data/20NG.map
 cd ..
 rm -rf tmp
 
