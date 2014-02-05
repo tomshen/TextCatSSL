@@ -6,6 +6,8 @@ import random
 import sys
 from collections import Counter
 
+import matplotlib.pyplot as plt
+
 import util
 
 def get_pred_labels(graph_file):
@@ -69,6 +71,20 @@ def label_feature_probs(data_set):
                     count / label_sums[label]
                 ])
 
+def get_label_feature_probs(data_set):
+    label_fps = {}
+    with util.open_output_file(data_set + '-feat-prob') as data:
+        datareader = csv.reader(data)
+        for datum in datareader:
+            label = int(datum[0])
+            feature = int(datum[1])
+            prob = float(datum[2])
+
+            if label not in label_fps:
+                label_fps[label] = []
+            label_fps[label].append((feature, prob))
+    return label_fps
+
 def make_small_data_set(data_set, num_docs, labels):
     small_set = 's' + ''.join(map(str, labels)) + '-' + data_set
 
@@ -92,9 +108,25 @@ def make_small_data_set(data_set, num_docs, labels):
     print('Smaller dataset with labels [%s] and %d docs created from %s.' %
         (','.join(map(str, labels)), num_docs, data_set))
 
+def plot_label_feature_probs(data_set1, data_set2, label=None):
+    if label is None:
+        lfps = zip(*sorted(get_label_feature_probs(data_set1).popitem()[1]))
+        lfps2 = zip(*sorted(get_label_feature_probs(data_set2).popitem()[1]))
+    else:
+        lfps = zip(*sorted(get_label_feature_probs(data_set1)[label]))
+        lfps2 = zip(*sorted(get_label_feature_probs(data_set2)[label]))
+    plt.plot(lfps[0], lfps[1], 'r')
+    plt.plot(lfps2[0], lfps2[1], 'b')
+
+    plt.show()
+
 def main():
-    # make_small_data_set('20NG', 10, [1,2])
     label_feature_probs(sys.argv[1])
+    label_feature_probs(sys.argv[2])
+    if len(sys.argv) > 3:
+        plot_label_feature_probs(sys.argv[1], sys.argv[2], sys.argv[3])
+    else:
+        plot_label_feature_probs(sys.argv[1], sys.argv[2])
 
 if __name__ == '__main__':
     main()
