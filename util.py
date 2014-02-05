@@ -1,4 +1,6 @@
+import csv
 from os.path import join
+
 from config import *
 
 def open_data_file(data_set, flags='rb'):
@@ -32,6 +34,43 @@ def get_num_features(data_set):
 
 def get_num_labels(data_set):
     return get_counts(data_set)[2]
+
+def get_doc_labels(data_set):
+    doc_labels = {}
+    with open_label_file(data_set) as labels:
+        i = 1
+        for line in labels:
+            doc_labels[i] = int(line.strip())
+            i += 1
+    return doc_labels
+
+def get_doc_feature_counts(data_set):
+    doc_features = {}
+    with open_data_file(data_set) as data:
+        datareader = csv.reader(data, delimiter=' ')
+        for datum in datareader:
+            doc = int(datum[0])
+            feature = int(datum[1])
+            count = int(datum[2])
+            if doc not in doc_features:
+                doc_features[doc] = {}
+            doc_features[doc][feature] = count
+
+    return doc_features
+
+def get_label_features(data_set):
+    label_features = {}
+    doc_labels = get_doc_labels(data_set)
+    with open_data_file(data_set) as data:
+        datareader = csv.reader(data, delimiter=' ')
+        for datum in datareader:
+            label = doc_labels[int(datum[0])]
+            feature = int(datum[1])
+            count = int(datum[2])
+            if label not in label_features:
+                label_features[label] = {}
+            label_features[label][feature] = count
+    return label_features
 
 def make_config(graph_file):
     data_set = graph_file.split('-')[0]
