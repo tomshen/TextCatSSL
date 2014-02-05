@@ -75,6 +75,7 @@ def generate_baseline_graph(data_set, verbose=False):
             datawriter.writerow([str(d), 'w' + str(w), tfidf])
         if verbose: print 'Wrote graph file %s' % filename
 
+# TODO remove dependency on num_docs / num_features
 def generate_knn_graph(data_set, k, verbose=False):
     data_counts = get_counts(data_set)
     num_docs = data_counts[0]
@@ -84,6 +85,7 @@ def generate_knn_graph(data_set, k, verbose=False):
 
     feature_matrix = np.matrix(np.zeros((num_docs, num_features)))
     words_doc_count = np.zeros(num_features)
+    docs = set()
     with open_data_file(data_set) as data:
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
@@ -91,16 +93,18 @@ def generate_knn_graph(data_set, k, verbose=False):
             word = int(row[1]) - 1
             count = int(row[2])
             words_doc_count[word] += 1
+            docs.add(doc)
             feature_matrix.itemset((doc,word), count)
     if verbose: print 'Loaded test data'
 
     if verbose: print 'Generating feature matrix'
     for doc in xrange(num_docs):
-        for word in xrange(num_features):
-            if words_doc_count[word] != 0:
-                count = feature_matrix.item((doc,word))
-                tfidf = math.log(count+1) * math.log(num_docs/float(words_doc_count[word]))
-                feature_matrix.itemset((doc,word), tfidf)
+        if doc in docs:
+            for word in xrange(num_features):
+                if words_doc_count[word] != 0:
+                    count = feature_matrix.item((doc,word))
+                    tfidf = math.log(count+1) * math.log(num_docs/float(words_doc_count[word]))
+                    feature_matrix.itemset((doc,word), tfidf)
         if doc % 10 == 9:
             if verbose: print 'Processed %d out of %d documents' % (doc+1, num_docs)
     if verbose: print 'Generated feature matrix'

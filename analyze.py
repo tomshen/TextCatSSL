@@ -86,7 +86,7 @@ def get_label_feature_probs(data_set):
     return label_fps
 
 def make_small_data_set(data_set, num_docs, labels):
-    small_set = 's' + ''.join(map(str, labels)) + '-' + data_set
+    small_set = 's' + ''.join(map(str, labels)) + '_' + data_set
 
     doc_features = util.get_doc_features(data_set)
     label_docs = util.get_label_docs(data_set)
