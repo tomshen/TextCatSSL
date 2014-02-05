@@ -65,6 +65,15 @@ def clean():
                         os.remove(os.path.join(d2, f))
         print 'Done.'
 
+def clean_data(data_set):
+    print 'Deleting all files in %s with suffix %s...' % (config.DATA_DIR,
+        data_set)
+    for f in os.listdir(config.DATA_DIR):
+        if '-' in f and f.split('.')[-2].split('-')[-1] == data_set:
+            os.remove(os.path.join(config.DATA_DIR, f))
+    print 'Done.'
+
+
 def main():
     if len(sys.argv) > 1:
         if sys.argv[1] == 'graph':
@@ -89,6 +98,13 @@ def main():
             run_junto(sys.argv[2])
         elif sys.argv[1] == 'clean':
             clean()
+            if len(sys.argv) > 2:
+                clean_data(sys.argv[2])
+        elif sys.argv[1] == 'small':
+            labels = [1,2]
+            if len(sys.argv) > 3 and sys.argv[4] == 'random':
+                labels = random.sample(range(1,21), 2)
+            analyze.make_small_data_set(sys.argv[2], int(sys.argv[3]), labels)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import os
 import csv
+import os
+import random
 import sys
 from collections import Counter
 
@@ -68,7 +69,31 @@ def label_feature_probs(data_set):
                     count / label_sums[label]
                 ])
 
+def make_small_data_set(data_set, num_docs, labels):
+    small_set = 's' + ''.join(map(str, labels)) + '-' + data_set
+
+    doc_features = util.get_doc_features(data_set)
+    label_docs = util.get_label_docs(data_set)
+    samp_size = num_docs / len(labels)
+    small_doc_labels = {}
+    with util.open_data_file(small_set, 'wb') as data:
+        datawriter = csv.writer(data, delimiter=' ')
+        for label in labels:
+            docs = random.sample(label_docs[label], samp_size)
+            for doc in docs:
+                for feature, count in doc_features[doc].items():
+                    datawriter.writerow([
+                        doc,
+                        feature,
+                        count
+                    ])
+    util.duplicate_label_file(data_set, small_set)
+    util.duplicate_count_file(data_set, small_set)
+    print('Smaller dataset with labels [%s] and %d docs created from %s.' %
+        (','.join(map(str, labels)), num_docs, data_set))
+
 def main():
+    # make_small_data_set('20NG', 10, [1,2])
     label_feature_probs(sys.argv[1])
 
 if __name__ == '__main__':

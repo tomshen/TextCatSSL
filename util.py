@@ -1,5 +1,6 @@
 import csv
 from os.path import join
+import shutil
 
 from config import *
 
@@ -20,6 +21,12 @@ def open_graph_file(graph_file, flags='wb'):
 
 def open_output_file(graph_file, flags='rb'):
     return open(join(OUTPUT_DIR, graph_file), flags)
+
+def duplicate_label_file(old_data_set, new_data_set):
+    return shutil.copyfile(join(DATA_DIR, old_data_set + '.label'), join(DATA_DIR, new_data_set + '.label'))
+
+def duplicate_count_file(old_data_set, new_data_set):
+    return shutil.copyfile(join(DATA_DIR, old_data_set + '.count'), join(DATA_DIR, new_data_set + '.count'))
 
 # returns [num_docs, num_features]
 def get_counts(data_set):
@@ -44,6 +51,18 @@ def get_doc_labels(data_set):
             i += 1
     return doc_labels
 
+def get_label_docs(data_set):
+    label_docs = {}
+    with open_label_file(data_set) as labels:
+        i = 1
+        for line in labels:
+            label = int(line.strip())
+            if label not in label_docs:
+                label_docs[label] = set()
+            label_docs[label].add(i)
+            i += 1
+    return label_docs
+
 def get_doc_features(data_set):
     doc_features = {}
     with open_data_file(data_set) as data:
@@ -55,7 +74,6 @@ def get_doc_features(data_set):
             if doc not in doc_features:
                 doc_features[doc] = {}
             doc_features[doc][feature] = count
-
     return doc_features
 
 def get_label_features(data_set):
