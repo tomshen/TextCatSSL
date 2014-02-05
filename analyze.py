@@ -1,6 +1,9 @@
+#!/usr/bin/env python
+
 import os
 import csv
 import sys
+from collections import Counter
 
 import util
 
@@ -50,3 +53,37 @@ def compare_to_true_labels(graph_file):
             curr_doc += 1
     error_rate = float(num_incorrect) / num_pred
     print '%s - error_rate: %.3f' % (graph_file, error_rate)
+
+def label_feature_probs(data_set):
+    label_counters = { i: Counter()
+        for i in xrange(1,util.get_num_labels(data_set)+1) }
+    doc_labels = {}
+    with util.open_label_file(data_set) as labels:
+        i = 1
+        for line in labels:
+            doc_labels[i] = int(line.strip())
+            i += 1
+    with util.open_data_file(data_set) as data:
+        datareader = csv.reader(data, delimiter=' ')
+        for datum in datareader:
+            label = doc_labels[int(datum[0])]
+            feature = int(datum[1])
+            count = int(datum[2])
+            label_counters[label][feature] += count
+    label_sums = { i: float(sum(label_counters[i].values()))
+        for i in label_counters }
+    with util.open_output_file(data_set + '-feat-prob', 'wb') as out:
+        datawriter = csv.writer(out)
+        for label, feature_counter in label_counters.items():
+            for feature, count in feature_counter.items():
+                datawriter.writerow([
+                    label,
+                    feature,
+                    count / label_sums[label]
+                ])
+
+def main():
+    label_feature_probs(sys.argv[1])
+
+if __name__ == '__main__':
+    main()
