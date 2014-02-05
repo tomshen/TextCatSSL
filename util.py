@@ -44,7 +44,7 @@ def get_doc_labels(data_set):
             i += 1
     return doc_labels
 
-def get_doc_feature_counts(data_set):
+def get_doc_features(data_set):
     doc_features = {}
     with open_data_file(data_set) as data:
         datareader = csv.reader(data, delimiter=' ')
