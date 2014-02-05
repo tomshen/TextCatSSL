@@ -13,6 +13,7 @@ tar xf 20news-bydate-matlab.tgz
 cp 20news-bydate/matlab/test.data ../data/20NG.data
 cp 20news-bydate/matlab/test.label ../data/20NG.label
 cp 20news-bydate/matlab/test.map ../data/20NG.map
+echo "7505\n61188\n20" > ../data/20NG.count
 cd ..
 rm -rf tmp
 

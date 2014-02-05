@@ -30,6 +30,9 @@ def get_num_docs(data_set):
 def get_num_features(data_set):
     return get_counts(data_set)[1]
 
+def get_num_labels(data_set):
+    return get_counts(data_set)[2]
+
 def make_config(graph_file):
     data_set = graph_file.split('-')[0]
     junto_config = {
