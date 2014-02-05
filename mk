@@ -102,7 +102,7 @@ def main():
                 clean_data(sys.argv[2])
         elif sys.argv[1] == 'small':
             labels = [1,2]
-            if len(sys.argv) > 3 and sys.argv[4] == 'random':
+            if len(sys.argv) > 4 and sys.argv[4] == 'random':
                 labels = random.sample(range(1,21), 2)
             analyze.make_small_data_set(sys.argv[2], int(sys.argv[3]), labels)
 
