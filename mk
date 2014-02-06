@@ -24,14 +24,7 @@ def make_config(data_set):
 def make_seeds(data_set, perc_seeds=0.1):
     labels = {}
     num_docs = util.get_num_docs(data_set)
-    with util.open_label_file(data_set) as f:
-        doc_idx = 1
-        for line in f:
-            label = int(line.strip())
-            if label not in labels:
-                labels[label] = []
-            labels[label].append(doc_idx)
-            doc_idx += 1
+    labels = util.get_label_docs(data_set)
     with util.open_seeds_file(data_set, 'wb') as f:
         for label, docs in labels.items():
             for doc in random.sample(docs, int(len(docs) * perc_seeds)): # take perc_seeds of labels
@@ -66,10 +59,10 @@ def clean():
         print 'Done.'
 
 def clean_data(data_set):
-    print 'Deleting all files in %s with suffix %s...' % (config.DATA_DIR,
+    print 'Deleting all files in %s with prefix %s...' % (config.DATA_DIR,
         data_set)
     for f in os.listdir(config.DATA_DIR):
-        if '-' in f and f.split('.')[-2].split('-')[-1] == data_set:
+        if '_' in f and f.split('.')[0].split('_')[0] == data_set:
             os.remove(os.path.join(config.DATA_DIR, f))
     print 'Done.'
 

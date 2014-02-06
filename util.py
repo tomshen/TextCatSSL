@@ -45,21 +45,25 @@ def get_num_labels(data_set):
 def get_doc_labels(data_set):
     doc_labels = {}
     with open_label_file(data_set) as labels:
+        docs = set(get_doc_features(data_set).keys())
         i = 1
         for line in labels:
-            doc_labels[i] = int(line.strip())
+            if i in docs:
+                doc_labels[i] = int(line.strip())
             i += 1
     return doc_labels
 
 def get_label_docs(data_set):
     label_docs = {}
     with open_label_file(data_set) as labels:
+        docs = set(get_doc_features(data_set).keys())
         i = 1
         for line in labels:
-            label = int(line.strip())
-            if label not in label_docs:
-                label_docs[label] = set()
-            label_docs[label].add(i)
+            if i in docs:
+                label = int(line.strip())
+                if label not in label_docs:
+                    label_docs[label] = set()
+                label_docs[label].add(i)
             i += 1
     return label_docs
 
