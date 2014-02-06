@@ -42,6 +42,7 @@ def run_junto(config_file):
         os.path.join(config.CONFIG_DIR, config_file)], env=junto_env)
 
 def analyze_output(graph_file):
+    analyze.save_pred_labels(graph_file)
     analyze.compare_to_true_labels(graph_file)
 
 def clean():
@@ -76,10 +77,10 @@ def main():
                 h = int(sys.argv[4])
                 b = int(sys.argv[5])
                 make_lsh_graph(data_set, h, b)
-            elif graph_type == 'knn':
+            elif graph_type.lower() == 'knn':
                 k = int(sys.argv[4])
                 make_knn_graph(data_set, k)
-            elif graph_type == 'base':
+            elif graph_type == 'base' or graph_type == 'baseline':
                 make_baseline_graph(data_set)
         elif sys.argv[1] == 'config':
             make_config(sys.argv[2])
@@ -95,8 +96,8 @@ def main():
                 clean_data(sys.argv[2])
         elif sys.argv[1] == 'small':
             labels = [1,2]
-            if len(sys.argv) > 4 and sys.argv[4] == 'random':
-                labels = random.sample(range(1,21), 2)
+            if len(sys.argv) > 5 and sys.argv[4] == 'random':
+                labels = random.sample(range(1,21), int(sys.argv[5]))
             analyze.make_small_data_set(sys.argv[2], int(sys.argv[3]), labels)
 
 

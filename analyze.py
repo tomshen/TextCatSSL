@@ -31,6 +31,13 @@ def get_pred_labels(graph_file):
                 continue
     return pred_labels
 
+def save_pred_labels(graph_file):
+    pred_labels = get_pred_labels(graph_file)
+    with util.open_output_file(graph_file + '.pred', 'wb') as f:
+        for doc, label_weights in sorted(pred_labels.items()):
+            f.write('%d %d %f\n' % (doc, label_weights[0], label_weights[1]))
+    print 'Saved predictions for %s.pred' % graph_file
+
 def get_seeds(data_set):
     with util.open_seeds_file(data_set) as f:
         datareader = csv.reader(f, delimiter='\t')
