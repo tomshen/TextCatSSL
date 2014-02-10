@@ -112,7 +112,11 @@ def generate_knn_graph(data_set, k, verbose=False):
     normalizing_matrix = np.matrix(np.zeros((num_docs, num_docs)))
     for i in xrange(num_docs):
         f = feature_matrix[i]
-        normalizing_matrix.itemset((i,i), 1.0 / math.sqrt(f * f.transpose()))
+        fft = math.sqrt(f * f.transpose())
+        if fft < 1e-9:
+            normalizing_matrix.itemset((i,i), 0.0)
+        else:
+            normalizing_matrix.itemset((i,i), 1.0 / fft)
     if verbose: print 'Generated normalizing matrix'
 
     if verbose: print 'Generating folded graph'
