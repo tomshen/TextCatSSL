@@ -60,10 +60,10 @@ def clean():
         print 'Done.'
 
 def clean_data(data_set):
-    print 'Deleting all files in %s with prefix %s...' % (config.DATA_DIR,
+    print 'Deleting all files in %s with suffix %s...' % (config.DATA_DIR,
         data_set)
     for f in os.listdir(config.DATA_DIR):
-        if '_' in f and f.split('.')[0].split('_')[0] == data_set:
+        if '_' in f and f.split('.')[0].split('_')[1] == data_set:
             os.remove(os.path.join(config.DATA_DIR, f))
     print 'Done.'
 
