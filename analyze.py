@@ -3,6 +3,7 @@
 import csv
 import os
 import random
+import string
 import sys
 from collections import Counter
 
@@ -114,6 +115,70 @@ def make_small_data_set(data_set, num_docs, labels):
     util.duplicate_count_file(data_set, small_set)
     print('Smaller dataset with labels [%s] and %d docs created from %s.' %
         (','.join(map(str, labels)), num_docs, data_set))
+
+def get_doc_hashes(graph_file):
+    assert 'lsh' in graph_file
+    doc_hashes = {}
+    with util.open_graph_file(graph_file, 'rb') as graph:
+        datareader = csv.reader(graph, delimiter='\t')
+        for row in datareader:
+            doc = int(row[0])
+            for i in xrange(len(row[1])):
+                if row[1][i] in string.ascii_lowercase:
+                    hl = row[1][i]
+                    h = row[1][i+1:]
+                    if doc not in doc_hashes:
+                        doc_hashes[doc] = {}
+                    if hl in doc_hashes[doc]:
+                        assert h == doc_hashes[doc][hl]
+                    else:
+                        doc_hashes[doc][hl] = h
+                    break
+    return doc_hashes
+
+def get_hash_docs(graph_file):
+    assert 'lsh' in graph_file
+    hash_docs = {}
+    with util.open_graph_file(graph_file, 'rb') as graph:
+        datareader = csv.reader(graph, delimiter='\t')
+        for row in datareader:
+            doc = int(row[0])
+            for i in xrange(len(row[1])):
+                if row[1][i] in string.ascii_lowercase:
+                    hl = row[1][i]
+                    h = row[1][i+1:]
+                    if hl not in hash_docs:
+                        hash_docs[hl] = {}
+                    if not h in hash_docs[hl]:
+                        hash_docs[hl][h] = set()
+                    hash_docs[hl][h].add(doc)
+                    break
+    return hash_docs
+
+def analyze_hash_labels(graph_file, hl='a'):
+    pred_labels = get_pred_labels(graph_file)
+    doc_hashes = { k: v[hl] for k,v in get_doc_hashes(graph_file).items() }
+    hash_docs = get_hash_docs(graph_file)[hl]
+    label_hashes = {}
+    for doc, label_weights in pred_labels.items():
+        label = label_weights[0]
+        if label not in label_hashes:
+            label_hashes[label] = set()
+        label_hashes[label].add(doc_hashes[doc])
+    label_hashes = { k: sorted(list(v)) for k,v in label_hashes.items() }
+    hash_labels = {}
+    for h, docs in hash_docs.items():
+        for doc in docs:
+            if doc in pred_labels:
+                if h not in hash_labels:
+                    hash_labels[h] = set()
+                label = pred_labels[doc][0]
+                hash_labels[h].add(label)
+            #else:
+                #hash_labels[h].add('UNKNOWN')
+    hash_labels = { k: sorted(list(v)) for k,v in hash_labels.items() }
+    util.print_as_json(label_hashes)
+    util.print_as_json(hash_labels)
 
 def plot_label_feature_probs(data_set1, data_set2, label=None):
     if label is None:

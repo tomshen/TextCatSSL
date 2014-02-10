@@ -1,4 +1,5 @@
 import csv
+import json
 from os.path import join
 import shutil
 
@@ -114,3 +115,6 @@ def make_config(graph_file):
     config_string = '\n'.join([k + ' = ' + v for k,v in junto_config.items()])
     with open(join(CONFIG_DIR, graph_file), 'w') as f:
         f.write(config_string)
+
+def print_as_json(obj, sort=True):
+    print(json.dumps(obj, sort_keys=sort, indent=2, separators=(',', ': ')))
