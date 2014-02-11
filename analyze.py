@@ -155,7 +155,7 @@ def get_hash_docs(graph_file):
                     break
     return hash_docs
 
-def analyze_hash_labels(graph_file, hl='a'):
+def get_label_hashes(graph_file, hl):
     pred_labels = get_pred_labels(graph_file)
     doc_hashes = { k: v[hl] for k,v in get_doc_hashes(graph_file).items() }
     hash_docs = get_hash_docs(graph_file)[hl]
@@ -166,6 +166,12 @@ def analyze_hash_labels(graph_file, hl='a'):
             label_hashes[label] = set()
         label_hashes[label].add(doc_hashes[doc])
     label_hashes = { k: sorted(list(v)) for k,v in label_hashes.items() }
+    return label_hashes
+
+def get_hash_labels(graph_file, hl='a'):
+    pred_labels = get_pred_labels(graph_file)
+    doc_hashes = { k: v[hl] for k,v in get_doc_hashes(graph_file).items() }
+    hash_docs = get_hash_docs(graph_file)[hl]
     hash_labels = {}
     for h, docs in hash_docs.items():
         for doc in docs:
@@ -174,11 +180,47 @@ def analyze_hash_labels(graph_file, hl='a'):
                     hash_labels[h] = set()
                 label = pred_labels[doc][0]
                 hash_labels[h].add(label)
-            #else:
-                #hash_labels[h].add('UNKNOWN')
     hash_labels = { k: sorted(list(v)) for k,v in hash_labels.items() }
-    util.print_as_json(label_hashes)
-    util.print_as_json(hash_labels)
+    return hash_labels
+
+def get_precision(graph_file):
+    pred_labels = get_pred_labels(graph_file)
+    data_set = graph_file.split('-')[0]
+    seeds = get_seeds(data_set)
+    label_pred = Counter()
+    label_correct = Counter()
+    with util.open_label_file(data_set) as f:
+        curr_doc = 1
+        for label in f:
+            if curr_doc not in seeds and curr_doc in pred_labels:
+                label = int(label)
+                label_pred[pred_labels[curr_doc][0]] += 1
+                if label == pred_labels[curr_doc][0]:
+                    label_correct[label] += 1
+            curr_doc += 1
+    return { l: float(label_correct[l]) / label_pred[l] for l in label_pred }
+
+def get_recall(graph_file):
+    pred_labels = get_pred_labels(graph_file)
+    data_set = graph_file.split('-')[0]
+    seeds = get_seeds(data_set)
+    label_total = Counter()
+    label_correct = Counter()
+    with util.open_label_file(data_set) as f:
+        curr_doc = 1
+        for label in f:
+            if curr_doc not in seeds and curr_doc in pred_labels:
+                label = int(label)
+                label_total[label] += 1
+                if label == pred_labels[curr_doc][0]:
+                    label_correct[label] += 1
+            curr_doc += 1
+    return { l: float(label_correct[l]) / label_total[l] for l in label_total }
+
+def get_f1_scores(graph_file):
+    precision = get_precision(graph_file)
+    recall = get_recall(graph_file)
+    return { l: calculate_f1_score(precision[l], recall[l]) for l in precision }
 
 def plot_label_feature_probs(data_set1, data_set2, label=None):
     if label is None:

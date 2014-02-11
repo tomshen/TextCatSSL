@@ -44,6 +44,11 @@ def run_junto(config_file):
 def analyze_output(graph_file):
     analyze.save_pred_labels(graph_file)
     analyze.compare_to_true_labels(graph_file)
+    def analysis_string(a):
+        return ', '.join([str(k) + ': ' + str(v) for k,v in a.items()])
+    print 'Precision:\t' + analysis_string(analyze.get_precision(graph_file))
+    print 'Recall:\t\t' + analysis_string(analyze.get_recall(graph_file))
+    print 'F1:\t\t' + analysis_string(analyze.get_f1_scores(graph_file))
 
 def clean():
     dirs = [config.CONFIG_DIR, config.GRAPH_DIR, config.OUTPUT_DIR]
@@ -85,7 +90,10 @@ def main():
         elif sys.argv[1] == 'config':
             make_config(sys.argv[2])
         elif sys.argv[1] == 'seeds':
-            make_seeds(sys.argv[2])
+            perc_seeds = 0.1
+            if len(sys.argv) > 3:
+                perc_seeds = float(sys.argv[3])
+            make_seeds(sys.argv[2], perc_seeds)
         elif sys.argv[1] == 'analyze':
             analyze_output(sys.argv[2])
         elif sys.argv[1] == 'run':
