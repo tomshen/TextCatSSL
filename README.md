@@ -13,3 +13,5 @@ Using locality-sensitive hashing to limit label propagation.
 $ git clone https://github.com/tomshen/lsh-propagation
 $ ./setup
 ```
+By default, Junto is run with 2GB of RAM. To modify this limit, change the 
+value of `JAVA_MEM_FLAG` in `lib/junto/bin/junto`.
