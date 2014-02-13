@@ -200,6 +200,35 @@ def get_precision(graph_file):
             curr_doc += 1
     return { l: float(label_correct[l]) / label_pred[l] for l in label_pred }
 
+def get_score_precision(graph_file, bucket_size=100):
+    pred_labels = get_pred_labels(graph_file)
+    data_set = graph_file.split('-')[0]
+    seeds = get_seeds(data_set)
+    score_pred = Counter()
+    score_correct = Counter()
+    with util.open_label_file(data_set) as f:
+        curr_doc = 1
+        for label in f:
+            if curr_doc not in seeds and curr_doc in pred_labels:
+                label = int(label)
+                floor_score = int(pred_labels[curr_doc][1] / bucket_size) * bucket_size
+                score_pred[floor_score] += 1
+                if label == pred_labels[curr_doc][0]:
+                    score_correct[floor_score] += 1
+            curr_doc += 1
+    return { s: float(score_correct[s]) / score_pred[s] for s in score_pred }
+
+def plot_score_precision(graph_file, bucket_size=100):
+    score_precision = get_score_precision(graph_file, bucket_size)
+    plt.bar(*zip(*sorted(score_precision.items())), width=bucket_size)
+    plt.show()
+
+def plot_scores(graph_file, bucket_size=100, cumulative=False):
+    pred_labels = get_pred_labels(graph_file)
+    scores = [v[1] for v in pred_labels.values()]
+    plt.hist(scores, bins=max(scores)/bucket_size, cumulative=cumulative)
+    plt.show()
+
 def get_recall(graph_file):
     pred_labels = get_pred_labels(graph_file)
     data_set = graph_file.split('-')[0]
