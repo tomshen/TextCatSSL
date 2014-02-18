@@ -45,10 +45,10 @@ def analyze_output(graph_file):
     analyze.save_pred_labels(graph_file)
     analyze.compare_to_true_labels(graph_file)
     def analysis_string(a):
-        return ', '.join([str(k) + ': ' + str(v) for k,v in a.items()])
-    print 'Precision:\t' + analysis_string(analyze.get_precision(graph_file))
-    print 'Recall:\t\t' + analysis_string(analyze.get_recall(graph_file))
-    print 'F1:\t\t' + analysis_string(analyze.get_f1_scores(graph_file))
+        return '\n'.join([str(k) + ': ' + str(v) for k,v in a.items()]) + '\nAverage: %f' % (float(sum(a.values())) / len(a))
+    print 'Precision:\n' + analysis_string(analyze.get_precision(graph_file))
+    print 'Recall:\n' + analysis_string(analyze.get_recall(graph_file))
+    print 'F1:\n' + analysis_string(analyze.get_f1_scores(graph_file))
 
 def clean():
     dirs = [config.CONFIG_DIR, config.GRAPH_DIR, config.OUTPUT_DIR]
