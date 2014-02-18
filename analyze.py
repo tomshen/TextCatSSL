@@ -266,6 +266,50 @@ def get_f1_scores(graph_file):
     return {l: calculate_f1_score(precision[l], recall[l]) for l in precision}
 
 
+def get_precision_recall(graph_file):
+    pred_labels = get_pred_labels(graph_file)
+    data_set = graph_file.split('-')[0]
+    seeds = get_seeds(data_set)
+    label_scores = []
+    label_total = Counter()
+    with util.open_label_file(data_set) as f:
+        curr_doc = 1
+        for label in f:
+            if curr_doc not in seeds and curr_doc in pred_labels:
+                label = int(label)
+                label_total[label] += 1
+                label_score = (pred_labels[curr_doc][1],
+                               label, pred_labels[curr_doc][0])
+                label_scores.append(label_score)
+            curr_doc += 1
+    label_scores.sort(reverse=True)
+    label_correct = Counter()
+    label_pred = Counter()
+    recall_precisions = []
+
+    def avg_values(d):
+        return sum(d.values()) / len(d)
+    for score, true_label, pred_label in label_scores:
+        label_pred[pred_label] += 1
+        label_correct[pred_label] += int(true_label == pred_label)
+        precision = avg_values({l: float(label_correct[l]) / label_pred[l]
+                                for l in label_pred})
+        recall = avg_values({l: float(label_correct[l]) / label_total[l]
+                             for l in label_total})
+        recall_precisions.append((recall, precision))
+    return recall_precisions
+
+
+def plot_precision_recall(*args):
+    for arg in args:
+        recall_precisions = get_precision_recall(arg)
+        plt.plot(*zip(*recall_precisions), label=arg)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.legend()
+    plt.show()
+
+
 def plot_label_feature_probs(data_set1, data_set2, label=None):
     if label is None:
         lfps = zip(*sorted(get_label_feature_probs(data_set1).popitem()[1]))
