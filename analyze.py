@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import csv
+import math
 import random
 import string
 import sys
@@ -321,6 +322,25 @@ def plot_label_feature_probs(data_set1, data_set2, label=None):
     plt.plot(lfps2[0], lfps2[1], 'b')
 
     plt.show()
+
+
+def entropy(examples):
+    label_counts = Counter([l for s, l in examples])
+    total_count = sum(label_counts.values())
+    label_props = {l: float(c) / total_count for l, c in label_counts.items()}
+    return sum([-1.0 * p * math.log(p, 2) for p in label_props.values()])
+
+
+def analyze_hash_entropy(graph_file):
+    assert 'lsh' in graph_file
+    num_hashes = int(graph_file.split('-')[-1].split('b')[0][1:])
+    hls = string.ascii_lowercase[:num_hashes]
+    hash_entropy = {}
+    for hl in hls:
+        lh = get_label_hashes(graph_file, hl)
+        examples = [(l, h) for l, hs in lh.items() for h in hs]
+        hash_entropy[hl] = entropy(examples)
+    return hash_entropy
 
 
 def main():
