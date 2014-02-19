@@ -97,6 +97,8 @@ def main():
         elif sys.argv[1] == 'analyze':
             analyze_output(sys.argv[2])
         elif sys.argv[1] == 'run':
+            if sys.argv[2] not in os.listdir(config.CONFIG_DIR):
+                make_config(sys.argv[2])
             run_junto(sys.argv[2])
         elif sys.argv[1] == 'clean':
             clean()
