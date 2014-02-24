@@ -3,7 +3,7 @@ import os
 import csv
 import math
 from datetime import datetime
-
+from collections import Counter
 import numpy as np
 
 from lsh import MultiLSHasher
@@ -18,37 +18,53 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
     num_features = data_counts[1]
 
     doc_features = {}
-    words_doc_count = [0 for i in xrange(num_features+1)]
+    word_counts = Counter()
     with open_data_file(data_set) as data:
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0])
             word = int(row[1])
             count = int(row[2])
-            words_doc_count[word] += 1
+            word_counts[word] += 1
             if doc not in doc_features:
                 doc_features[doc] = []
             doc_features[doc].append((word, count))
     if verbose: print 'Loaded doc features'
+    for doc, features in doc_features.items():
+        feature_tfidf = []
+        for w, c in features:
+            tfidf = math.log(c+1) * math.log(num_docs/float(word_counts[w]))
+            feature_tfidf.append((w,tfidf))
+        doc_features[doc] = feature_tfidf
 
     hashers.compute_stream(doc_features)
     signatures = hashers.compute_signatures()
     if verbose: print 'Computed signatures'
 
+    doc_features = {}
+    words_doc_count = Counter()
     with open_data_file(data_set) as data:
-        filename = '%s-lsh-h%db%d' % (data_set, num_hashes, num_bits)
-        with open_graph_file(filename) as graph:
-            datareader = csv.reader(data, delimiter=' ')
-            datawriter = csv.writer(graph, delimiter='\t')
-            for row in datareader:
-                doc = int(row[0])
-                word = int(row[1])
-                count = int(row[2])
-                for hl, s in signatures.items():
-                    hashed_word = str(word) + hl + s[doc]
-                    tfidf = math.log(count+1) * math.log(num_docs/float(words_doc_count[word]))
-                    datawriter.writerow([doc, hashed_word, tfidf])
-        if verbose: print 'Wrote graph file %s' % filename
+        datareader = csv.reader(data, delimiter=' ')
+        for row in datareader:
+            doc = int(row[0])
+            count = int(row[2])
+            for hl, s in signatures.items():
+                word = str(row[1]) + hl + s[doc]
+                words_doc_count[word] += 1
+                if doc not in doc_features:
+                    doc_features[doc] = []
+                doc_features[doc].append((word, count))
+    if verbose: print 'Generated hashed doc features'
+
+    filename = '%s-lsh-h%db%d' % (data_set, num_hashes, num_bits)
+    with open_graph_file(filename) as graph:
+        datawriter = csv.writer(graph, delimiter='\t')
+        for doc, feature_counts in doc_features.items():
+            for feature, count in feature_counts:
+                tfidf = math.log(count+1) * math.log(num_docs/float(
+                  words_doc_count[feature]))
+                datawriter.writerow([doc, feature, tfidf])
+    if verbose: print 'Wrote graph file %s' % filename
 
 def generate_baseline_graph(data_set, verbose=False):
     data_counts = get_counts(data_set)
