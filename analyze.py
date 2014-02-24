@@ -8,6 +8,7 @@ import sys
 from collections import Counter
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 import util
 
@@ -341,6 +342,45 @@ def analyze_hash_entropy(graph_file):
         examples = [(l, h) for l, hs in lh.items() for h in hs]
         hash_entropy[hl] = entropy(examples)
     return hash_entropy
+
+
+def analyze_label_entropy(graph_file):
+    assert 'lsh' in graph_file
+    num_hashes = int(graph_file.split('-')[-1].split('b')[0][1:])
+    hls = string.ascii_lowercase[:num_hashes]
+    hash_entropy = {}
+    for hl in hls:
+        lh = get_label_hashes(graph_file, hl)
+        examples = [(h, l) for l, hs in lh.items() for h in hs]
+        hash_entropy[hl] = entropy(examples)
+    return hash_entropy
+
+
+def hash_class_image(graph_file):
+    def get_lhs(graph_file, hl):
+        pred_labels = get_pred_labels(graph_file)
+        doc_hashes = {k: v[hl] for k, v in get_doc_hashes(graph_file).items()}
+        label_hashes = []
+        for doc, label_weights in pred_labels.items():
+            label = label_weights[0]
+            h = doc_hashes[doc]
+            label_hashes.append((label, h))
+        return label_hashes
+    assert 'lsh' in graph_file
+    num_hashes = int(graph_file.split('-')[-1].split('b')[0][1:])
+    num_bits = int(graph_file.split('-')[-1].split('b')[1])
+    num_labels = util.get_num_labels(graph_file.split('-')[0])
+    hls = string.ascii_lowercase[:num_hashes]
+    for hl in hls:
+        lh = get_lhs(graph_file, hl)
+        grid = np.zeros((2 ** num_bits, num_labels))
+        for l, h in lh:
+            grid[int(h, 2)][int(l) - 1] += 1
+    plt.imshow(grid, aspect='auto')
+    plt.xlabel('Labels')
+    plt.ylabel('Hashes (as base10 integers)')
+    plt.title('%s: label / hash count' % graph_file)
+    plt.show()
 
 
 def main():
