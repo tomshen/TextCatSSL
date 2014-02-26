@@ -38,7 +38,7 @@ def run_junto(config_file):
     junto_env = os.environ.copy()
     junto_env['JUNTO_DIR'] = os.path.join(os.getcwd(), 'lib/junto')
     junto_env['PATH'] = junto_env['JUNTO_DIR'] + ':' + junto_env['PATH']
-    subprocess.Popen(['./lib/junto/bin/junto', 'config',
+    subprocess.call(['./lib/junto/bin/junto', 'config',
         os.path.join(config.CONFIG_DIR, config_file)], env=junto_env)
 
 def analyze_output(graph_file):
