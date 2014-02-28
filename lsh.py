@@ -1,7 +1,9 @@
 import multiprocessing
-import random
 import string
 import sys
+
+import numpy as np
+import numpy.random as random
 
 def _LSHasher_compute_stream(h):
     h[0][1].compute_stream(h[1])
@@ -45,7 +47,7 @@ class LSHasher:
             random.seed(self.seed)
         else:
             self.seed = random.randint(1, sys.maxint)
-        self.pool = [random.gauss(0,1) for i in xrange(pool_size)]
+        self.pool = random.randn(pool_size)
 
     def profile_hash(self, iterations=10**6):
         import time
@@ -78,7 +80,7 @@ class LSHasher:
     def compute_doc(self, doc, features):
         """Compute for one doc and associated features"""
         if doc not in self.dot_products:
-            self.dot_products[doc] = [0 for i in xrange(self.num_bits)]
+            self.dot_products[doc] = np.zeros(self.num_bits)
         for j in xrange(self.num_bits):
             self.dot_products[doc][j] = sum(
                 (self.pool[self.hash_feature(j+1, f+1)]*w for f,w in features))
