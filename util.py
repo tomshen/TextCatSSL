@@ -29,6 +29,9 @@ def duplicate_label_file(old_data_set, new_data_set):
 def duplicate_count_file(old_data_set, new_data_set):
     return shutil.copyfile(join(DATA_DIR, old_data_set + '.count'), join(DATA_DIR, new_data_set + '.count'))
 
+def save_plot(plt, filename):
+    plt.savefig(join(OUTPUT_DIR, join('img', filename)))
+
 # returns [num_docs, num_features]
 def get_counts(data_set):
     with open(join(DATA_DIR, data_set + '.count')) as f:

@@ -7,6 +7,8 @@ import string
 import sys
 from collections import Counter
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -50,6 +52,8 @@ def get_seeds(data_set):
 
 
 def calculate_f1_score(precision, recall):
+    if precision + recall == 0:
+        return 0.0
     return 2.0 * (precision * recall) / (precision + recall)
 
 
@@ -265,7 +269,8 @@ def get_recall(graph_file):
 def get_f1_scores(graph_file):
     precision = get_precision(graph_file)
     recall = get_recall(graph_file)
-    return {l: calculate_f1_score(precision[l], recall[l]) for l in precision}
+    return {l: calculate_f1_score(precision[l], recall[l]) for l in precision
+            if l in recall}
 
 
 def get_precision_recall(graph_file):
@@ -356,7 +361,7 @@ def analyze_label_entropy(graph_file):
     return hash_entropy
 
 
-def hash_class_image(graph_file):
+def hash_class_image(graph_file, save=True):
     def get_lhs(graph_file, hl):
         pred_labels = get_pred_labels(graph_file)
         doc_hashes = {k: v[hl] for k, v in get_doc_hashes(graph_file).items()}
@@ -373,14 +378,19 @@ def hash_class_image(graph_file):
     hls = string.ascii_lowercase[:num_hashes]
     for hl in hls:
         lh = get_lhs(graph_file, hl)
-        grid = np.zeros((2 ** num_bits, num_labels))
+        grid = np.zeros((2 ** num_bits, num_labels + 1))
         for l, h in lh:
-            grid[int(h, 2)][int(l) - 1] += 1
-    plt.imshow(grid, aspect='auto')
-    plt.xlabel('Labels')
-    plt.ylabel('Hashes (as base10 integers)')
-    plt.title('%s: label / hash count' % graph_file)
-    plt.show()
+            grid[int(h, 2)][int(l)] += 1
+        plt.imshow(grid, aspect='equal', interpolation='nearest')
+        plt.xlabel('Labels')
+        plt.ylabel('Hashes (as base10 integers)')
+        plt.title('%s: label / hash count for hash %s' % (graph_file, hl))
+        plt.colorbar()
+        if save:
+            util.save_plot(plt, graph_file + hl)
+        else:
+            plt.show()
+        plt.clf()
 
 
 def main():

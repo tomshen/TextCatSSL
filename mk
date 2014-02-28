@@ -96,6 +96,8 @@ def main():
             make_seeds(sys.argv[2], perc_seeds)
         elif sys.argv[1] == 'analyze':
             analyze_output(sys.argv[2])
+        elif sys.argv[1] == 'plot':
+            analyze.hash_class_image(sys.argv[2], save=False)
         elif sys.argv[1] == 'run':
             if sys.argv[2] not in os.listdir(config.CONFIG_DIR):
                 make_config(sys.argv[2])
