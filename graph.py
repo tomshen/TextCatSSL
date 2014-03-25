@@ -9,6 +9,19 @@ import numpy as np
 from lsh import MultiLSHasher
 from util import open_data_file, open_graph_file, get_counts
 
+def get_doc_features(data_set):
+    doc_features = {}
+    with open_data_file(data_set) as data:
+        datareader = csv.reader(data, delimiter=' ')
+        for row in datareader:
+            doc = int(row[0])
+            word = int(row[1])
+            count = int(row[2])
+            if doc not in doc_features:
+                doc_features[doc] = []
+            doc_features[doc].append((word, count))
+    return doc_features
+
 def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
     hashers = MultiLSHasher(num_hashes, num_bits)
     if verbose: print 'Hashers initialized'

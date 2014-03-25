@@ -8,7 +8,7 @@ import sys
 from collections import Counter
 
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -362,19 +362,19 @@ def analyze_label_entropy(graph_file):
 
 
 def hash_class_image(graph_file, save=True):
+    data_file = graph_file.split('-')[0]
     def get_lhs(graph_file, hl):
-        pred_labels = get_pred_labels(graph_file)
+        doc_labels = util.get_doc_labels(data_file)
         doc_hashes = {k: v[hl] for k, v in get_doc_hashes(graph_file).items()}
         label_hashes = []
-        for doc, label_weights in pred_labels.items():
-            label = label_weights[0]
+        for doc, label in doc_labels.items():
             h = doc_hashes[doc]
             label_hashes.append((label, h))
         return label_hashes
     assert 'lsh' in graph_file
     num_hashes = int(graph_file.split('-')[-1].split('b')[0][1:])
     num_bits = int(graph_file.split('-')[-1].split('b')[1])
-    num_labels = util.get_num_labels(graph_file.split('-')[0])
+    num_labels = util.get_num_labels(data_file)
     hls = string.ascii_lowercase[:num_hashes]
     for hl in hls:
         lh = get_lhs(graph_file, hl)
