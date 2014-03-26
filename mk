@@ -9,6 +9,9 @@ import graph
 import random
 import util
 
+def make_kmeans_graph(data_set, num_clusterings, k):
+    graph.generate_kmeans_graph(data_set, num_clusterings, k, verbose=True)
+
 def make_lsh_graph(data_set, num_hashes, num_bits):
     graph.generate_lsh_graph(data_set, num_hashes, num_bits, verbose=True)
 
@@ -87,6 +90,13 @@ def main():
                 make_knn_graph(data_set, k)
             elif graph_type == 'base' or graph_type == 'baseline':
                 make_baseline_graph(data_set)
+            elif graph_type == 'kmeans':
+                k = int(sys.argv[4])
+                try:
+                    nc = int(sys.argv[5])
+                except:
+                    nc = 1
+                make_kmeans_graph(data_set, k, nc)
         elif sys.argv[1] == 'config':
             make_config(sys.argv[2])
         elif sys.argv[1] == 'seeds':

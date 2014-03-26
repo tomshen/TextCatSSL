@@ -2,10 +2,14 @@
 import os
 import csv
 import math
+import multiprocessing as mp
+import string
 from datetime import datetime
 from collections import Counter
+
 import numpy as np
 
+from kmeans import load_data, cluster_data
 from lsh import MultiLSHasher
 from util import open_data_file, open_graph_file, get_counts
 
@@ -21,6 +25,67 @@ def get_doc_features(data_set):
                 doc_features[doc] = []
             doc_features[doc].append((word, count))
     return doc_features
+
+def __cluster_data(params):
+    i, data_set, k = params
+    return (string.ascii_lowercase[i], cluster_data(load_data(data_set), k))
+
+def generate_kmeans_graph(data_set, num_clusterings=1, k=8, verbose=False):
+    process_pool = mp.Pool(processes=num_clusterings)
+    labels = dict(process_pool.map(__cluster_data, [
+        (i, data_set, k) for i in xrange(num_clusterings)]))
+    process_pool.close()
+    process_pool.join()
+    if verbose: print 'Documents clustered'
+
+    data_counts = get_counts(data_set)
+    num_docs = data_counts[0]
+    num_features = data_counts[1]
+
+    doc_features = {}
+    word_counts = Counter()
+    with open_data_file(data_set) as data:
+        datareader = csv.reader(data, delimiter=' ')
+        for row in datareader:
+            doc = int(row[0])
+            word = int(row[1])
+            count = int(row[2])
+            word_counts[word] += 1
+            if doc not in doc_features:
+                doc_features[doc] = []
+            doc_features[doc].append((word, count))
+    if verbose: print 'Loaded doc features'
+    for doc, features in doc_features.items():
+        feature_tfidf = []
+        for w, c in features:
+            tfidf = math.log(c+1) * math.log(num_docs/float(word_counts[w]))
+            feature_tfidf.append((w,tfidf))
+        doc_features[doc] = feature_tfidf
+
+    doc_features = {}
+    words_doc_count = Counter()
+    with open_data_file(data_set) as data:
+        datareader = csv.reader(data, delimiter=' ')
+        for row in datareader:
+            doc = int(row[0])
+            count = int(row[2])
+            for hl, label in labels.items():
+                word = str(row[1]) + hl + str(label[doc-1])
+                words_doc_count[word] += 1
+                if doc not in doc_features:
+                    doc_features[doc] = []
+                doc_features[doc].append((word, count))
+    if verbose: print 'Generated labeled doc features'
+
+    filename = '%s-km-k%dn%d' % (data_set, k, num_clusterings)
+    with open_graph_file(filename) as graph:
+        datawriter = csv.writer(graph, delimiter='\t')
+        for doc, feature_counts in doc_features.items():
+            for feature, count in feature_counts:
+                tfidf = math.log(count+1) * math.log(num_docs/float(
+                  words_doc_count[feature]))
+                datawriter.writerow([doc, feature, tfidf])
+    if verbose: print 'Wrote graph file %s' % filename
 
 def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
     hashers = MultiLSHasher(num_hashes, num_bits)
