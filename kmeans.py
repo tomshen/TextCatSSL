@@ -32,7 +32,9 @@ def tfidf(ftd, ndt, nd):
     return tf * idf
 
 def cosine_distance(u, v):
-    dist = np.dot(u, v) / (norm(u) * norm(v))
+    dist = 1.0 - np.dot(u, v) / (norm(u) * norm(v))
+    if dist < 0:
+        return 0.0
     return dist
 
 def initialize_means(data, k):
@@ -49,8 +51,9 @@ def initialize_means(data, k):
     dist_from_seed = np.zeros(num_docs)
     for s in xrange(1, k):
         for i in xrange(1, num_docs):
-            # For each data point x, compute D(x), the distance between x and the
-            # nearest center that has already been chosen.
+            # For each data point x, compute D(x), the distance between x and
+            # the nearest center that has already been chosen.
+            # TODO: use matrix multiplication for more efficient calculation
             dist_from_seed[i] = min([cosine_distance(data[i], seeds[j])
                                      for j in xrange(0, s)])
 
@@ -63,3 +66,45 @@ def initialize_means(data, k):
 
     return seeds
 
+def cluster_data(data, k):
+    def different_clusters(X, Y):
+        if X is None or Y is None:
+            return True
+        for i in xrange(k):
+            if cosine_distance(X[i], Y[i]) > 0.01:
+                return True
+        return False
+
+    num_docs = len(data)
+    num_feats = len(data[0])
+
+    cluster_centers = initialize_means(data, k)
+    cluster_membership = np.zeros(num_docs)
+    new_cluster_centers = None
+    iteration = 0
+    while different_clusters(cluster_centers, new_cluster_centers):
+        if new_cluster_centers is not None:
+            cluster_centers = new_cluster_centers
+        cluster_doc_count = np.zeros(k)
+        new_cluster_centers = np.zeros((k, num_feats))
+        for d in xrange(num_docs):
+            doc = data[d]
+            dists = [cosine_distance(doc, cluster_centers[c]) for c in xrange(k)]
+            closest, min_dist = np.argmin(dists), min(dists)
+            weight = 1.0 - min_dist
+            new_cluster_centers[closest] += data[d] * weight
+            cluster_doc_count[closest] += weight
+        for i in xrange(k):
+            new_cluster_centers[i] /= cluster_doc_count[i]
+        iteration += 1
+        print iteration
+
+    cluster_centers = new_cluster_centers
+    cluster_membership = np.array([np.argmin([cosine_distance(data[d],
+            cluster_centers[c]) for c in xrange(k)]) for d in xrange(num_docs)])
+
+    return cluster_membership
+
+if __name__ == '__main__':
+    import sys
+    cluster_data(load_data('20NG'), int(sys.argv[1]))
