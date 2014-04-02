@@ -22,11 +22,22 @@ def load_data(data_set):
             data[doc][word] = count
     return data
 
-def generate_feature_matrix(data):
-    # TODO: use tfidf instead of counts
-    return data
+def generate_feature_matrix(data, tfidf_threshold=0.2):
+    feature_matrix = np.copy(data)
+    word_doc_counts = np.array([np.count_nonzero(data.T[w])
+                                for w in xrange(data.shape[1])])
 
-def tfidf(ftd, ndt, nd):
+    for doc in xrange(data.shape[0]):
+        for word in xrange(data.shape[1]):
+            if data[doc][word] == 0 or word_doc_counts[word] == 0:
+                continue
+            count = data[doc][word]
+            tfidf = calculate_tfidf(count, word_doc_counts[word], data.shape[0])
+            feature_matrix[doc][word] = count if tfidf > tfidf_threshold else 0
+
+    return feature_matrix
+
+def calculate_tfidf(ftd, ndt, nd):
     tf = math.log(ftd + 1)
     idf = math.log(float(nd) / ndt)
     return tf * idf
@@ -41,8 +52,8 @@ def initialize_means(data, k):
     '''
     Uses k-means++ to initialize seeds for clustering
     '''
-    num_docs = len(data)
-    num_feats = len(data[0])
+    num_docs = data.shape[0]
+    num_feats = data.shape[1]
     seeds = np.empty((k, num_feats))
 
     # Choose one center uniformly at random from among the data points.
@@ -75,8 +86,9 @@ def cluster_data(data, k):
                 return True
         return False
 
-    num_docs = len(data)
-    num_feats = len(data[0])
+    num_docs = data.shape[0]
+    num_feats = data.shape[1]
+    data = generate_feature_matrix(data)
 
     cluster_centers = initialize_means(data, k)
     cluster_membership = np.zeros(num_docs)
@@ -107,4 +119,4 @@ def cluster_data(data, k):
 
 if __name__ == '__main__':
     import sys
-    cluster_data(load_data('20NG'), int(sys.argv[1]))
+    print cluster_data(load_data('20NG'), int(sys.argv[1]))
