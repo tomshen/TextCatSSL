@@ -4,6 +4,7 @@ import csv
 import math
 import multiprocessing as mp
 import string
+import sys
 from datetime import datetime
 from collections import Counter
 
@@ -31,6 +32,7 @@ def __cluster_data(params):
     return (string.ascii_lowercase[i], cluster_data(load_data(data_set), k))
 
 def generate_kmeans_graph(data_set, num_clusterings=1, k=8, verbose=False):
+    if verbose: print 'Generating k-means graph'
     process_pool = mp.Pool(processes=num_clusterings)
     labels = dict(process_pool.map(__cluster_data, [
         (i, data_set, k) for i in xrange(num_clusterings)]))
@@ -85,6 +87,14 @@ def generate_kmeans_graph(data_set, num_clusterings=1, k=8, verbose=False):
                 tfidf = math.log(count+1) * math.log(num_docs/float(
                   words_doc_count[feature]))
                 datawriter.writerow([doc, feature, tfidf])
+
+            for feat in xrange(1, num_features+1):
+                w = 'w%d' % feat
+                for hl in labels:
+                    for label in xrange(k):
+                        lw = str(feat) + hl + str(k)
+                        datawriter.writerow([w, lw, '1.0'])
+
     if verbose: print 'Wrote graph file %s' % filename
 
 def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
@@ -166,7 +176,7 @@ def generate_baseline_graph(data_set, verbose=False):
         datawriter = csv.writer(graph, delimiter='\t')
         for d,w,c in test_data:
             tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
-            datawriter.writerow([str(d), 'w' + str(w), tfidf])
+            datawriter.writerow([str(d), str(w) + 'w', tfidf])
         if verbose: print 'Wrote graph file %s' % filename
 
 # TODO remove dependency on num_docs / num_features
