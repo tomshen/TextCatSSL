@@ -28,8 +28,8 @@ def make_iterative_baseline_graph(data_set, iterations):
     output_file = data_set + '-baseline'
     run_junto(output_file)
     for i in xrange(2, iterations+1):
-        print 'Iteration %d' % i
         run_junto(output_file)
+        print 'Iteration %d' % i
         graph.generate_labeled_baseline_graph(output_file, verbose=True)
 
 def make_config(data_set):
