@@ -1,6 +1,7 @@
 import csv
 import json
 from os.path import join
+import re
 import shutil
 
 from config import *
@@ -118,6 +119,34 @@ def make_config(graph_file):
     config_string = '\n'.join([k + ' = ' + v for k,v in junto_config.items()])
     with open(join(CONFIG_DIR, graph_file), 'w') as f:
         f.write(config_string)
+
+def is_word(s):
+    try:
+        i = int(s) # relies on words containing non-digits
+        return False
+    except:
+        return True
+
+def parse_output_file(output_file):
+    def parse_label_scores(s):
+        scores = s.split()
+        return {scores[i]: float(scores[i+1]) for i in xrange(0, len(scores), 2)}
+
+    with open_output_file(output_file) as f:
+        data = csv.reader(f, delimiter='\t')
+        words = {}
+        docs = {}
+        for row in data:
+            name = row[0]
+            # gold_label, gold_score = [int(x) for x in row[1].split(' ')]
+            # seed_label, seed_score = [int(x) for x in row[2].split(' ')]
+            label_scores = parse_label_scores(row[3])
+            if is_word(name):
+                words[int(re.split('\D', name)[0])] = label_scores
+            else:
+                docs[int(name)] = label_scores
+
+        return docs, words
 
 def print_as_json(obj, sort=True):
     print(json.dumps(obj, sort_keys=sort, indent=2, separators=(',', ': ')))

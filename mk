@@ -21,6 +21,17 @@ def make_knn_graph(data_set, num_neighbors):
 def make_baseline_graph(data_set):
     graph.generate_baseline_graph(data_set, verbose=True)
 
+def make_iterative_baseline_graph(data_set, iterations):
+    print 'Iteration 1'
+    graph.generate_baseline_graph(data_set, verbose=True)
+    make_config(data_set)
+    output_file = data_set + '-baseline'
+    run_junto(output_file)
+    for i in xrange(2, iterations+1):
+        print 'Iteration %d' % i
+        run_junto(output_file)
+        graph.generate_labeled_baseline_graph(output_file, verbose=True)
+
 def make_config(data_set):
     util.make_config(data_set)
 
@@ -90,6 +101,12 @@ def main():
                 make_knn_graph(data_set, k)
             elif graph_type == 'base' or graph_type == 'baseline':
                 make_baseline_graph(data_set)
+            elif graph_type == 'ib':
+                try:
+                    i = int(sys.argv[4])
+                except:
+                    i = 2
+                make_iterative_baseline_graph(data_set, i)
             elif graph_type == 'kmeans':
                 k = int(sys.argv[4])
                 try:

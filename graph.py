@@ -13,6 +13,7 @@ import numpy as np
 from kmeans import load_data, cluster_data
 from lsh import MultiLSHasher
 from util import open_data_file, open_graph_file, get_counts
+from analyze import find_ambiguous_words, get_pred_labels
 
 def get_doc_features(data_set):
     doc_features = {}
@@ -154,19 +155,34 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
                 datawriter.writerow([doc, feature, tfidf])
     if verbose: print 'Wrote graph file %s' % filename
 
+def get_new_doc_features(data_set, output_file):
+    doc_features = get_doc_features(data_set)
+    ambiguous_words = find_ambiguous_words(output_file)
+    doc_labels = get_pred_labels(output_file)
+    for doc, features in doc_features.items():
+        label = doc_labels[doc][0]
+        new_features = []
+        for word, count in features:
+            if word in ambiguous_words:
+                word_labels = ambiguous_words[word]
+                if str(label) in word_labels:
+                    new_features.append((str(word) + 'w' + str(label), count))
+                else:
+                    new_features.append((str(word) + 'w', count))
+            else:
+                new_features.append((str(word) + 'w', count))
+        doc_features[doc] = new_features
+    return doc_features
+
 def generate_baseline_graph(data_set, verbose=False):
     data_counts = get_counts(data_set)
     num_docs = data_counts[0]
     num_features = data_counts[1]
     test_data = []
 
-    words_doc_count = [0 for i in xrange(num_features+1)]
-    with open_data_file(data_set) as data:
-        datareader = csv.reader(data, delimiter=' ')
-        for row in datareader:
-            doc = int(row[0])
-            word = int(row[1])
-            count = int(row[2])
+    words_doc_count = Counter()
+    for doc, features in get_doc_features(data_set).items():
+        for word, count in features:
             words_doc_count[word] += 1
             test_data.append([doc, word, count])
     if verbose: print 'Loaded doc features'
@@ -178,6 +194,30 @@ def generate_baseline_graph(data_set, verbose=False):
             tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
             datawriter.writerow([str(d), str(w) + 'w', tfidf])
         if verbose: print 'Wrote graph file %s' % filename
+
+def generate_labeled_baseline_graph(output_file, verbose=False):
+    data_set = output_file.split('-')[0]
+    data_counts = get_counts(data_set)
+    num_docs = data_counts[0]
+    num_features = data_counts[1]
+    test_data = []
+
+    words_doc_count = Counter()
+    for doc, features in get_new_doc_features(data_set, output_file).items():
+        for word, count in features:
+            words_doc_count[word] += 1
+            test_data.append([doc, word, count])
+    if verbose: print 'Loaded doc features'
+
+    filename = data_set + '-baseline'
+    with open_graph_file(filename) as graph:
+        datawriter = csv.writer(graph, delimiter='\t')
+        for d,w,c in test_data:
+            tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
+            datawriter.writerow([str(d), str(w), tfidf])
+        if verbose: print 'Wrote graph file %s' % filename
+
+
 
 # TODO remove dependency on num_docs / num_features
 def generate_knn_graph(data_set, k, verbose=False):
