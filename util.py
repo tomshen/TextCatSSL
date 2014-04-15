@@ -6,6 +6,12 @@ import shutil
 
 from config import *
 
+def open_map_file(data_set, flags='rb'):
+    return open(join(DATA_DIR, data_set + '.map'), flags)
+
+def open_vocab_file(data_set, flags='rb'):
+    return open(join(DATA_DIR, data_set + '.vocab'), flags)
+
 def open_data_file(data_set, flags='rb'):
     return open(join(DATA_DIR, data_set + '.data'), flags)
 
@@ -57,6 +63,14 @@ def get_doc_labels(data_set):
                 doc_labels[i] = int(line.strip())
             i += 1
     return doc_labels
+
+def get_class_names(data_set):
+    with open_map_file(data_set) as f:
+        return {i+1: w.split()[0] for i, w in enumerate(f)}
+
+def get_actual_words(data_set):
+    with open_vocab_file(data_set) as f:
+        return {i+1: w.strip() for i, w in enumerate(f)}
 
 def get_label_docs(data_set):
     label_docs = {}
