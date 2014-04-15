@@ -90,6 +90,7 @@ def compare_to_true_labels(graph_file):
             curr_doc += 1
     error_rate = float(num_incorrect) / num_pred
     print '%s - error_rate: %.3f' % (graph_file, error_rate)
+    return error_rate
 
 
 def label_feature_probs(data_set):

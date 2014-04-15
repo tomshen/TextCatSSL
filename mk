@@ -22,6 +22,9 @@ def make_baseline_graph(data_set):
     graph.generate_baseline_graph(data_set, verbose=True)
 
 def make_iterative_baseline_graph(data_set, iterations):
+    if iterations == 1:
+        make_baseline_graph(data_set)
+        return
     print 'Iteration 1'
     graph.generate_baseline_graph(data_set, verbose=True)
     make_config(data_set)
