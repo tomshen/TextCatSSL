@@ -72,6 +72,13 @@ def get_actual_words(data_set):
     with open_vocab_file(data_set) as f:
         return {i+1: w.strip() for i, w in enumerate(f)}
 
+__vocab_cache = {}
+def get_word_index(word, data_set='20NG'):
+  if data_set not in __vocab_cache:
+      __vocab_cache[data_set] = get_actual_words(data_set)
+  return next((i for i, w in __vocab_cache[data_set].items()
+              if word == w), None)
+
 def get_label_docs(data_set):
     label_docs = {}
     with open_label_file(data_set) as labels:

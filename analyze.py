@@ -14,11 +14,11 @@ import numpy as np
 
 import util
 
-
-def find_ambiguous_words(output_file, percentile=95):
+def find_ambiguous_words(output_file, percentile=95, actual_names=False):
     def scores(m):
         return sorted([s for ls in m.values() for s in ls.values()])
 
+    data_set = output_file.split('-')[0]
     docs, words = util.parse_output_file(output_file)
     ws = scores(words)
     word_threshold = np.percentile(ws, percentile)
@@ -29,7 +29,11 @@ def find_ambiguous_words(output_file, percentile=95):
             l for l,s in label_scores.items() if s > word_threshold]
         if len(high_score_labels) > 1:
             ambiguous_words[word] = high_score_labels
-
+    if actual_names:
+        vocab = util.get_actual_words(data_set)
+        class_names = util.get_class_names(data_set)
+        return {vocab[i]: [class_names[int(d)] for d in docs]
+                for i, docs in ambiguous_words.items()}
     return ambiguous_words
 
 def get_pred_labels(graph_file):
