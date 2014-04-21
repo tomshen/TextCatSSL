@@ -21,19 +21,24 @@ def make_knn_graph(data_set, num_neighbors):
 def make_baseline_graph(data_set):
     graph.generate_baseline_graph(data_set, verbose=True)
 
-def make_iterative_baseline_graph(data_set, iterations):
-    if iterations == 1:
-        make_baseline_graph(data_set)
-        return
+def make_iterative_baseline_graph(data_set, iterations, percentile):
+    output_file = data_set + '-pc%di%d' % (percentile, iterations)
     print 'Iteration 1'
-    graph.generate_baseline_graph(data_set, verbose=True)
-    make_config(data_set)
-    output_file = data_set + '-baseline'
+    graph.generate_baseline_graph(data_set, filename=output_file, verbose=True)
+    if iterations == 1:
+        return
+    make_config(output_file)
     run_junto(output_file)
-    for i in xrange(2, iterations+1):
+    for i in xrange(2, iterations):
         run_junto(output_file)
         print 'Iteration %d' % i
-        graph.generate_labeled_baseline_graph(output_file, verbose=True)
+        graph.generate_labeled_baseline_graph(output_file, verbose=True,
+                                              percentile=percentile)
+    run_junto(output_file)
+    print 'Iteration %d' % iterations
+    graph.generate_labeled_baseline_graph(output_file, verbose=True,
+                                          percentile=percentile)
+
 
 def make_config(data_set):
     util.make_config(data_set)
@@ -109,7 +114,11 @@ def main():
                     i = int(sys.argv[4])
                 except:
                     i = 2
-                make_iterative_baseline_graph(data_set, i)
+                try:
+                    pc = int(sys.argv[5])
+                except:
+                    pc = 95
+                make_iterative_baseline_graph(data_set, i, pc)
             elif graph_type == 'kmeans':
                 k = int(sys.argv[4])
                 try:

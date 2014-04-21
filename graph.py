@@ -155,9 +155,9 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
                 datawriter.writerow([doc, feature, tfidf])
     if verbose: print 'Wrote graph file %s' % filename
 
-def get_new_doc_features(data_set, output_file):
+def get_new_doc_features(data_set, output_file, percentile):
     doc_features = get_doc_features(data_set)
-    ambiguous_words = find_ambiguous_words(output_file)
+    ambiguous_words = find_ambiguous_words(output_file, percentile=percentile)
     doc_labels = get_pred_labels(output_file)
     for doc, features in doc_features.items():
         label = doc_labels[doc][0]
@@ -174,7 +174,7 @@ def get_new_doc_features(data_set, output_file):
         doc_features[doc] = new_features
     return doc_features
 
-def generate_baseline_graph(data_set, verbose=False):
+def generate_baseline_graph(data_set, filename=None, verbose=False):
     data_counts = get_counts(data_set)
     num_docs = data_counts[0]
     num_features = data_counts[1]
@@ -187,7 +187,7 @@ def generate_baseline_graph(data_set, verbose=False):
             test_data.append([doc, word, count])
     if verbose: print 'Loaded doc features'
 
-    filename = data_set + '-baseline'
+    if not filename: filename = data_set + '-baseline'
     with open_graph_file(filename) as graph:
         datawriter = csv.writer(graph, delimiter='\t')
         for d,w,c in test_data:
@@ -195,7 +195,7 @@ def generate_baseline_graph(data_set, verbose=False):
             datawriter.writerow([str(d), str(w) + 'w', tfidf])
         if verbose: print 'Wrote graph file %s' % filename
 
-def generate_labeled_baseline_graph(output_file, verbose=False):
+def generate_labeled_baseline_graph(output_file, percentile=95, verbose=False):
     data_set = output_file.split('-')[0]
     data_counts = get_counts(data_set)
     num_docs = data_counts[0]
@@ -203,19 +203,18 @@ def generate_labeled_baseline_graph(output_file, verbose=False):
     test_data = []
 
     words_doc_count = Counter()
-    for doc, features in get_new_doc_features(data_set, output_file).items():
+    for doc, features in get_new_doc_features(data_set, output_file, percentile).items():
         for word, count in features:
             words_doc_count[word] += 1
             test_data.append([doc, word, count])
     if verbose: print 'Loaded doc features'
 
-    filename = data_set + '-baseline'
-    with open_graph_file(filename) as graph:
+    with open_graph_file(output_file) as graph:
         datawriter = csv.writer(graph, delimiter='\t')
         for d,w,c in test_data:
             tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
             datawriter.writerow([str(d), str(w), tfidf])
-        if verbose: print 'Wrote graph file %s' % filename
+        if verbose: print 'Wrote graph file %s' % output_file
 
 
 
@@ -294,7 +293,14 @@ def generate_knn_graphs(data_set, ks=[5,10,20,30,50,100], verbose=False):
     it makes more sense to iterate through the different k's within
     the function rather than outside it
     '''
+    data_counts = get_counts(data_set)
+    num_docs = data_counts[0]
+    num_features = data_counts[1]
+
     max_k = max(ks)
+
+    assert max_k < num_docs
+
     feature_matrix = np.matrix(np.zeros((num_docs, num_features)))
     words_doc_count = np.zeros(num_features)
     with open_data_file(data_set) as data:
