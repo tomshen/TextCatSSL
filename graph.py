@@ -159,6 +159,7 @@ def get_new_doc_features(data_set, output_file, percentile):
     doc_features = get_doc_features(data_set)
     ambiguous_words = find_ambiguous_words(output_file, percentile=percentile)
     doc_labels = get_pred_labels(output_file)
+    word_to_split_word = {w: Counter() for w in ambiguous_words}
     for doc, features in doc_features.items():
         label = doc_labels[doc][0]
         new_features = []
@@ -166,12 +167,19 @@ def get_new_doc_features(data_set, output_file, percentile):
             if word in ambiguous_words:
                 word_labels = ambiguous_words[word]
                 if str(label) in word_labels:
-                    new_features.append((str(word) + 'w' + str(label), count))
+                    split_word = str(word) + 'w' + str(label)
+                    new_features.append((split_word, count))
+                    word_to_split_word[word][split_word] += count
                 else:
                     new_features.append((str(word) + 'w', count))
             else:
                 new_features.append((str(word) + 'w', count))
         doc_features[doc] = new_features
+    for word, split_words in word_to_split_word.items():
+        word = str(word) + 'w'
+        doc_features[word] = []
+        for split_word, count in split_words.items():
+            doc_features[word].append((split_word, count))
     return doc_features
 
 def generate_baseline_graph(data_set, filename=None, verbose=False):
