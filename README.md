@@ -1,6 +1,6 @@
-# lsh-propagation
+# Graph-based SSL for Text Categorization without Building k-NN Graphs
 
-Using locality-sensitive hashing to limit label propagation.
+Code for my ML research 2013-2014.
 
 ## Requirements
 * Java 1.5+
