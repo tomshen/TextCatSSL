@@ -9,6 +9,7 @@ from datetime import datetime
 from collections import Counter
 
 import numpy as np
+from scipy.sparse import dok_matrix
 
 from kmeans import load_data, cluster_data
 from lsh import MultiLSHasher
@@ -22,7 +23,7 @@ def get_doc_features(data_set):
         for row in datareader:
             doc = int(row[0])
             word = int(row[1])
-            count = int(row[2])
+            count = float(row[2]) if '.' in row[2] else int(row[2])
             if doc not in doc_features:
                 doc_features[doc] = []
             doc_features[doc].append((word, count))
@@ -52,7 +53,7 @@ def generate_kmeans_graph(data_set, num_clusterings=1, k=8, verbose=False):
         for row in datareader:
             doc = int(row[0])
             word = int(row[1])
-            count = int(row[2])
+            count = float(row[2]) if '.' in row[2] else int(row[2])
             word_counts[word] += 1
             if doc not in doc_features:
                 doc_features[doc] = []
@@ -71,7 +72,7 @@ def generate_kmeans_graph(data_set, num_clusterings=1, k=8, verbose=False):
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0])
-            count = int(row[2])
+            count = float(row[2]) if '.' in row[2] else int(row[2])
             for hl, label in labels.items():
                 word = str(row[1]) + hl + str(label[doc-1])
                 words_doc_count[word] += 1
@@ -113,19 +114,20 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
         for row in datareader:
             doc = int(row[0])
             word = int(row[1])
-            count = int(row[2])
+            count = float(row[2])
             word_counts[word] += 1
             if doc not in doc_features:
                 doc_features[doc] = []
             doc_features[doc].append((word, count))
     if verbose: print 'Loaded doc features'
+    '''
     for doc, features in doc_features.items():
         feature_tfidf = []
         for w, c in features:
             tfidf = math.log(c+1) * math.log(num_docs/float(word_counts[w]))
             feature_tfidf.append((w,tfidf))
         doc_features[doc] = feature_tfidf
-
+    '''
     hashers.compute_stream(doc_features)
     signatures = hashers.compute_signatures()
     if verbose: print 'Computed signatures'
@@ -136,7 +138,7 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0])
-            count = int(row[2])
+            count = float(row[2])
             for hl, s in signatures.items():
                 word = str(row[1]) + hl + s[doc]
                 words_doc_count[word] += 1
@@ -150,9 +152,9 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
         datawriter = csv.writer(graph, delimiter='\t')
         for doc, feature_counts in doc_features.items():
             for feature, count in feature_counts:
-                tfidf = math.log(count+1) * math.log(num_docs/float(
-                  words_doc_count[feature]))
-                datawriter.writerow([doc, feature, tfidf])
+                #tfidf = math.log(count+1) * math.log(num_docs/float(
+                #  words_doc_count[feature]))
+                datawriter.writerow([doc, feature, count])
     if verbose: print 'Wrote graph file %s' % filename
 
 def get_new_doc_features(data_set, output_file, percentile):
@@ -219,9 +221,13 @@ def generate_labeled_baseline_graph(output_file, percentile=95, verbose=False):
 
     with open_graph_file(output_file) as graph:
         datawriter = csv.writer(graph, delimiter='\t')
-        for d,w,c in test_data:
-            tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
-            datawriter.writerow([str(d), str(w), tfidf])
+        for d, features in get_new_doc_features(data_set, output_file, percentile).items():
+            for w, c in features:
+                if type(c) is int:
+                    tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
+                else:
+                    tfidf = c
+                datawriter.writerow([d, w, tfidf])
         if verbose: print 'Wrote graph file %s' % output_file
 
 
@@ -234,40 +240,48 @@ def generate_knn_graph(data_set, k, verbose=False):
 
     assert k < num_docs
 
-    feature_matrix = np.matrix(np.zeros((num_docs, num_features)))
+    feature_matrix = dok_matrix((num_docs, num_features))
     words_doc_count = np.zeros(num_features)
+    is_tfidf = False
     docs = set()
     with open_data_file(data_set) as data:
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0]) - 1
             word = int(row[1]) - 1
-            count = int(row[2])
+            if is_tfidf:
+                count = float(row[2])
+            elif '.' in row[2]:
+                count = float(row[2])
+                is_tfidf = True
+            else:
+                count = int(row[2])
             words_doc_count[word] += 1
             docs.add(doc)
-            feature_matrix.itemset((doc,word), count)
+            feature_matrix[(doc, word)] = count
     if verbose: print 'Loaded test data'
 
     if verbose: print 'Generating feature matrix'
-    for doc in xrange(num_docs):
-        if doc in docs:
-            for word in xrange(num_features):
-                if words_doc_count[word] != 0:
-                    count = feature_matrix.item((doc,word))
-                    tfidf = math.log(count+1) * math.log(num_docs/float(words_doc_count[word]))
-                    feature_matrix.itemset((doc,word), tfidf)
-        if doc % 10 == 9:
-            if verbose: print 'Processed %d out of %d documents' % (doc+1, num_docs)
+    if not is_tfidf:
+        for doc in xrange(num_docs):
+            if doc in docs:
+                for word in xrange(num_features):
+                    if words_doc_count[word] != 0:
+                        count = feature_matrix.item((doc,word))
+                        tfidf = math.log(count+1) * math.log(num_docs/float(words_doc_count[word]))
+                        feature_matrix[(doc, word)] = tfidf
+            if doc % 10 == 9:
+                if verbose: print 'Processed %d out of %d documents' % (doc+1, num_docs)
     if verbose: print 'Generated feature matrix'
 
-    normalizing_matrix = np.matrix(np.zeros((num_docs, num_docs)))
+    normalizing_matrix = dok_matrix((num_docs, num_docs))
     for i in xrange(num_docs):
-        f = feature_matrix[i]
-        fft = math.sqrt(f * f.transpose())
+        f = feature_matrix.getrow(i)
+        fft = math.sqrt((f * f.transpose())[(0,0)])
         if fft < 1e-9:
-            normalizing_matrix.itemset((i,i), 0.0)
+            normalizing_matrix[(i,i)] = 0.0
         else:
-            normalizing_matrix.itemset((i,i), 1.0 / fft)
+            normalizing_matrix[(i,i)] = 1.0 / fft
     if verbose: print 'Generated normalizing matrix'
 
     if verbose: print 'Generating folded graph'
@@ -275,9 +289,9 @@ def generate_knn_graph(data_set, k, verbose=False):
     N = normalizing_matrix
     F = feature_matrix
     for doc in xrange(num_docs):
-        Nv = np.matrix(np.zeros((num_docs,1)))
-        Nv.itemset(doc, N.item((doc, doc)))
-        FtNv = F[doc].transpose() * N.item((doc,doc))
+        Nv = dok_matrix((num_docs,1))
+        Nv[doc] = N[(doc, doc)]
+        FtNv = F[doc].transpose() * N[(doc,doc)]
         doc_weights = np.array(N * (F * FtNv)).transpose()
         nearest_neighbors = np.argsort(doc_weights)
         for neighbor in nearest_neighbors[0][-k:]:
