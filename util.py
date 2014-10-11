@@ -60,7 +60,10 @@ def get_doc_labels(data_set):
         i = 1
         for line in labels:
             if i in docs:
-                doc_labels[i] = int(line.strip())
+                try:
+                    doc_labels[i] = int(line.strip())
+                except:
+                    doc_labels[i] = float(line.strip())
             i += 1
     return doc_labels
 
@@ -86,7 +89,10 @@ def get_label_docs(data_set):
         i = 1
         for line in labels:
             if i in docs:
-                label = int(line.strip())
+                try:
+                    label = int(line.strip())
+                except:
+                    label = float(line.strip())
                 if label not in label_docs:
                     label_docs[label] = set()
                 label_docs[label].add(i)
@@ -100,10 +106,13 @@ def get_doc_features(data_set):
         for datum in datareader:
             doc = int(datum[0])
             feature = int(datum[1])
-            count = int(datum[2])
+            try:
+                weight = int(datum[2])
+            except:
+                weight = float(datum[2])
             if doc not in doc_features:
                 doc_features[doc] = {}
-            doc_features[doc][feature] = count
+            doc_features[doc][feature] = weight
     return doc_features
 
 def get_label_features(data_set):
