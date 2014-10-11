@@ -176,7 +176,7 @@ def generate_knn_graph(data_set, k, verbose=False):
 
     assert k < num_docs
 
-    feature_matrix = dok_matrix((num_docs, num_features))
+    feature_matrix = np.matrix(np.zeros((num_docs, num_features)))
     words_doc_count = np.zeros(num_features)
     is_tfidf = False
     docs = set()
@@ -194,7 +194,7 @@ def generate_knn_graph(data_set, k, verbose=False):
                 count = int(row[2])
             words_doc_count[word] += 1
             docs.add(doc)
-            feature_matrix[(doc, word)] = count
+            feature_matrix.itemset((doc, word), count)
     if verbose: print 'Loaded test data'
 
     if verbose: print 'Generating feature matrix'
@@ -205,19 +205,19 @@ def generate_knn_graph(data_set, k, verbose=False):
                     if words_doc_count[word] != 0:
                         count = feature_matrix.item((doc,word))
                         tfidf = math.log(count+1) * math.log(num_docs/float(words_doc_count[word]))
-                        feature_matrix[(doc, word)] = tfidf
+                        feature_matrix.itemset((doc,word), tfidf)
             if doc % 10 == 9:
                 if verbose: print 'Processed %d out of %d documents' % (doc+1, num_docs)
     if verbose: print 'Generated feature matrix'
 
-    normalizing_matrix = dok_matrix((num_docs, num_docs))
+    normalizing_matrix = np.matrix(np.zeros((num_docs, num_docs)))
     for i in xrange(num_docs):
-        f = feature_matrix.getrow(i)
-        fft = math.sqrt((f * f.transpose())[(0,0)])
+        f = feature_matrix[i]
+        fft = math.sqrt(f * f.transpose())
         if fft < 1e-9:
-            normalizing_matrix[(i,i)] = 0.0
+            normalizing_matrix.itemset((i,i), 0.0)
         else:
-            normalizing_matrix[(i,i)] = 1.0 / fft
+            normalizing_matrix.itemset((i,i), 1.0 / fft)
     if verbose: print 'Generated normalizing matrix'
 
     if verbose: print 'Generating folded graph'
@@ -225,9 +225,9 @@ def generate_knn_graph(data_set, k, verbose=False):
     N = normalizing_matrix
     F = feature_matrix
     for doc in xrange(num_docs):
-        Nv = dok_matrix((num_docs,1))
-        Nv[doc] = N[(doc, doc)]
-        FtNv = F[doc].transpose() * N[(doc,doc)]
+        Nv = np.matrix(np.zeros((num_docs,1)))
+        Nv.itemset(doc, N.item((doc, doc)))
+        FtNv = F[doc].transpose() * N.item((doc,doc))
         doc_weights = np.array(N * (F * FtNv)).transpose()
         nearest_neighbors = np.argsort(doc_weights)
         for neighbor in nearest_neighbors[0][-k:]:
