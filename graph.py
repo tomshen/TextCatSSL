@@ -307,16 +307,13 @@ def generate_knn_graphs(data_set, ks=[5,10,20,30,50,100], verbose=False):
     edges = []
     N = normalizing_matrix
     F = feature_matrix
+    doc_neighbors = {}
     for doc in xrange(num_docs):
         Nv = np.matrix(np.zeros((num_docs,1)))
         Nv.itemset(doc, N.item((doc, doc)))
         FtNv = F[doc].transpose() * N.item((doc,doc))
         doc_weights = np.array(N * (F * FtNv)).transpose()
-        nearest_neighbors = np.argsort(doc_weights)
-        for neighbor in nearest_neighbors[0][-max_k:]:
-            if doc_weights.item(neighbor) < 1e-9:
-                continue
-            edges.append(((doc+1, int(neighbor)+1), doc_weights.item(neighbor)))
+        doc_neighbors[doc] = np.argsort(doc_weights)[-max_k:]
         if doc % 10 == 9:
             if verbose: print 'Processed %d out of %d documents' % (doc+1, num_docs)
     if verbose: print 'Generated folded graph'
