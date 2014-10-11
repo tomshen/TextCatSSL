@@ -261,36 +261,50 @@ def generate_knn_graphs(data_set, ks=[5,10,20,30,50,100], verbose=False):
 
     feature_matrix = np.matrix(np.zeros((num_docs, num_features)))
     words_doc_count = np.zeros(num_features)
+    is_tfidf = False
+    docs = set()
     with open_data_file(data_set) as data:
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0]) - 1
             word = int(row[1]) - 1
-            count = int(row[2])
+            if is_tfidf:
+                count = float(row[2])
+            elif '.' in row[2]:
+                count = float(row[2])
+                is_tfidf = True
+            else:
+                count = int(row[2])
             words_doc_count[word] += 1
-            feature_matrix.itemset((doc,word), count)
-    if verbose: print('[%s]: Loaded test data.' % str(datetime.now().time()))
+            docs.add(doc)
+            feature_matrix.itemset((doc, word), count)
+    if verbose: print 'Loaded test data'
 
-    if verbose: print('[%s]: Generating feature matrix' % str(datetime.now().time()))
-    for doc in xrange(num_docs):
-        for word in xrange(num_features):
-            if words_doc_count[word] != 0:
-                count = feature_matrix.item((doc,word))
-                tfidf = math.log(count+1) * math.log(num_docs/float(words_doc_count[word]))
-                feature_matrix.itemset((doc,word), tfidf)
-        if doc % 10 == 9:
-            if verbose: print('[%s]: Processed %d out of %d documents' % (str(datetime.now().time()),
-                (doc+1), num_docs))
-    if verbose: print('[%s]: Generated feature matrix' % str(datetime.now().time()))
+    if verbose: print 'Generating feature matrix'
+    if not is_tfidf:
+        for doc in xrange(num_docs):
+            if doc in docs:
+                for word in xrange(num_features):
+                    if words_doc_count[word] != 0:
+                        count = feature_matrix.item((doc,word))
+                        tfidf = math.log(count+1) * math.log(num_docs/float(words_doc_count[word]))
+                        feature_matrix.itemset((doc,word), tfidf)
+            if doc % 10 == 9:
+                if verbose: print 'Processed %d out of %d documents' % (doc+1, num_docs)
+    if verbose: print 'Generated feature matrix'
 
     normalizing_matrix = np.matrix(np.zeros((num_docs, num_docs)))
     for i in xrange(num_docs):
         f = feature_matrix[i]
-        normalizing_matrix.itemset((i,i), 1.0 / math.sqrt(f * f.transpose()))
-    if verbose: print('[%s]: Generated normalizing matrix' % str(datetime.now().time()))
+        fft = math.sqrt(f * f.transpose())
+        if fft < 1e-9:
+            normalizing_matrix.itemset((i,i), 0.0)
+        else:
+            normalizing_matrix.itemset((i,i), 1.0 / fft)
+    if verbose: print 'Generated normalizing matrix'
 
-    if verbose: print('[%s]: Generating folded graph' % str(datetime.now().time()))
-    doc_neighbors = {}
+    if verbose: print 'Generating folded graph'
+    edges = []
     N = normalizing_matrix
     F = feature_matrix
     for doc in xrange(num_docs):
@@ -298,12 +312,14 @@ def generate_knn_graphs(data_set, ks=[5,10,20,30,50,100], verbose=False):
         Nv.itemset(doc, N.item((doc, doc)))
         FtNv = F[doc].transpose() * N.item((doc,doc))
         doc_weights = np.array(N * (F * FtNv)).transpose()
-        neighbors = np.argsort(doc_weights)[0]
-        doc_neighbors[doc] = [(neighbor, doc_weights.item(neighbor)) for neighbor in neighbors[-max_k:]]
+        nearest_neighbors = np.argsort(doc_weights)
+        for neighbor in nearest_neighbors[0][-max_k:]:
+            if doc_weights.item(neighbor) < 1e-9:
+                continue
+            edges.append(((doc+1, int(neighbor)+1), doc_weights.item(neighbor)))
         if doc % 10 == 9:
-            if verbose: print('[%s]: Processed %d out of %d documents' % (
-                str(datetime.now().time()), (doc+1), num_docs))
-    if verbose: print('[%s]: Generated folded graph' % str(datetime.now().time()))
+            if verbose: print 'Processed %d out of %d documents' % (doc+1, num_docs)
+    if verbose: print 'Generated folded graph'
 
     for k in ks:
         filename = '%s-knn-k%d' % (data_set, k)
