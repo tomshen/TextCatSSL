@@ -33,72 +33,6 @@ def __cluster_data(params):
     i, data_set, k = params
     return (string.ascii_lowercase[i], cluster_data(load_data(data_set), k))
 
-def generate_kmeans_graph(data_set, num_clusterings=1, k=8, verbose=False):
-    if verbose: print 'Generating k-means graph'
-    process_pool = mp.Pool(processes=num_clusterings)
-    labels = dict(process_pool.map(__cluster_data, [
-        (i, data_set, k) for i in xrange(num_clusterings)]))
-    process_pool.close()
-    process_pool.join()
-    if verbose: print 'Documents clustered'
-
-    data_counts = get_counts(data_set)
-    num_docs = data_counts[0]
-    num_features = data_counts[1]
-
-    doc_features = {}
-    word_counts = Counter()
-    with open_data_file(data_set) as data:
-        datareader = csv.reader(data, delimiter=' ')
-        for row in datareader:
-            doc = int(row[0])
-            word = int(row[1])
-            count = float(row[2]) if '.' in row[2] else int(row[2])
-            word_counts[word] += 1
-            if doc not in doc_features:
-                doc_features[doc] = []
-            doc_features[doc].append((word, count))
-    if verbose: print 'Loaded doc features'
-    for doc, features in doc_features.items():
-        feature_tfidf = []
-        for w, c in features:
-            tfidf = math.log(c+1) * math.log(num_docs/float(word_counts[w]))
-            feature_tfidf.append((w,tfidf))
-        doc_features[doc] = feature_tfidf
-
-    doc_features = {}
-    words_doc_count = Counter()
-    with open_data_file(data_set) as data:
-        datareader = csv.reader(data, delimiter=' ')
-        for row in datareader:
-            doc = int(row[0])
-            count = float(row[2]) if '.' in row[2] else int(row[2])
-            for hl, label in labels.items():
-                word = str(row[1]) + hl + str(label[doc-1])
-                words_doc_count[word] += 1
-                if doc not in doc_features:
-                    doc_features[doc] = []
-                doc_features[doc].append((word, count))
-    if verbose: print 'Generated labeled doc features'
-
-    filename = '%s-km-k%dn%d' % (data_set, k, num_clusterings)
-    with open_graph_file(filename) as graph:
-        datawriter = csv.writer(graph, delimiter='\t')
-        for doc, feature_counts in doc_features.items():
-            for feature, count in feature_counts:
-                tfidf = math.log(count+1) * math.log(num_docs/float(
-                  words_doc_count[feature]))
-                datawriter.writerow([doc, feature, tfidf])
-
-            for feat in xrange(1, num_features+1):
-                w = 'w%d' % feat
-                for hl in labels:
-                    for label in xrange(k):
-                        lw = str(feat) + hl + str(k)
-                        datawriter.writerow([w, lw, '1.0'])
-
-    if verbose: print 'Wrote graph file %s' % filename
-
 def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
     hashers = MultiLSHasher(num_hashes, num_bits)
     if verbose: print 'Hashers initialized'
@@ -120,14 +54,16 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
                 doc_features[doc] = []
             doc_features[doc].append((word, count))
     if verbose: print 'Loaded doc features'
-    '''
+
     for doc, features in doc_features.items():
+        if type(features[0]) is float:
+            break
         feature_tfidf = []
         for w, c in features:
             tfidf = math.log(c+1) * math.log(num_docs/float(word_counts[w]))
             feature_tfidf.append((w,tfidf))
         doc_features[doc] = feature_tfidf
-    '''
+
     hashers.compute_stream(doc_features)
     signatures = hashers.compute_signatures()
     if verbose: print 'Computed signatures'
@@ -138,7 +74,7 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
         datareader = csv.reader(data, delimiter=' ')
         for row in datareader:
             doc = int(row[0])
-            count = float(row[2])
+            count = float(row[2]) if '.' in row[2] else int(row[2])
             for hl, s in signatures.items():
                 word = str(row[1]) + hl + s[doc]
                 words_doc_count[word] += 1
@@ -152,9 +88,9 @@ def generate_lsh_graph(data_set, num_hashes=3, num_bits=5, verbose=False):
         datawriter = csv.writer(graph, delimiter='\t')
         for doc, feature_counts in doc_features.items():
             for feature, count in feature_counts:
-                #tfidf = math.log(count+1) * math.log(num_docs/float(
-                #  words_doc_count[feature]))
-                datawriter.writerow([doc, feature, count])
+                tfidf = math.log(count+1) * math.log(num_docs/float(
+                    words_doc_count[feature]))
+                datawriter.writerow([doc, feature, tfidf])
     if verbose: print 'Wrote graph file %s' % filename
 
 def get_new_doc_features(data_set, output_file, percentile):
@@ -201,8 +137,11 @@ def generate_baseline_graph(data_set, filename=None, verbose=False):
     with open_graph_file(filename) as graph:
         datawriter = csv.writer(graph, delimiter='\t')
         for d,w,c in test_data:
-            tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
-            datawriter.writerow([str(d), str(w) + 'w', tfidf])
+            if type(c) is float:
+                datawriter.writerow([str(d), str(w) + 'w', c])
+            else:
+                tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
+                datawriter.writerow([str(d), str(w) + 'w', tfidf])
         if verbose: print 'Wrote graph file %s' % filename
 
 def generate_labeled_baseline_graph(output_file, percentile=95, verbose=False):
@@ -223,10 +162,7 @@ def generate_labeled_baseline_graph(output_file, percentile=95, verbose=False):
         datawriter = csv.writer(graph, delimiter='\t')
         for d, features in get_new_doc_features(data_set, output_file, percentile).items():
             for w, c in features:
-                if type(c) is int:
-                    tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
-                else:
-                    tfidf = c
+                tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
                 datawriter.writerow([d, w, tfidf])
         if verbose: print 'Wrote graph file %s' % output_file
 
