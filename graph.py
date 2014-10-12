@@ -313,7 +313,8 @@ def generate_knn_graphs(data_set, ks=[5,10,20,30,50,100], verbose=False):
         Nv.itemset(doc, N.item((doc, doc)))
         FtNv = F[doc].transpose() * N.item((doc,doc))
         doc_weights = np.array(N * (F * FtNv)).transpose()
-        doc_neighbors[doc] = np.argsort(doc_weights)[-max_k:]
+        neighbors = np.argsort(doc_weights)[0]
+        doc_neighbors[doc] = [(neighbor, doc_weights.item(neighbor)) for neighbor in neighbors[-max_k:]]
         if doc % 10 == 9:
             if verbose: print 'Processed %d out of %d documents' % (doc+1, num_docs)
     if verbose: print 'Generated folded graph'
@@ -323,7 +324,7 @@ def generate_knn_graphs(data_set, ks=[5,10,20,30,50,100], verbose=False):
         with open_graph_file(filename) as graph:
             datawriter = csv.writer(graph, delimiter='\t')
             for doc in xrange(num_docs):
-                for neighbor,weight in doc_neighbors[doc][-k:]:
+                for neighbor, weight in doc_neighbors[doc][-k:]:
                     if weight >= 1e-9:
                         datawriter.writerow([str(doc+1), str(neighbor+1), weight])
             if verbose: print 'Wrote graph file %s' % filename
