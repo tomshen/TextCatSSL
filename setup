@@ -5,11 +5,16 @@ mkdir -p data
 mkdir graph
 mkdir lib
 mkdir -p out/img
+mkdir proppr
 
 tar xf data.tar.gz
 
-cd lib
-git clone https://github.com/parthatalukdar/junto
-cd junto
+git submodule update
+
+cd lib/junto
 bin/build update compile
+cd ../..
+
+cd lib/ProPPR
+ant clean build
 cd ../..

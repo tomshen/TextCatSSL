@@ -11,6 +11,7 @@ from collections import Counter
 import numpy as np
 from scipy.sparse import dok_matrix
 
+from proppr import run_proppr
 from kmeans import load_data, cluster_data
 from lsh import MultiLSHasher
 from util import open_data_file, open_graph_file, get_counts
@@ -165,8 +166,6 @@ def generate_labeled_baseline_graph(output_file, percentile=95, verbose=False):
                 tfidf = math.log(c+1) * math.log(num_docs/float(words_doc_count[w]))
                 datawriter.writerow([d, w, tfidf])
         if verbose: print 'Wrote graph file %s' % output_file
-
-
 
 # TODO remove dependency on num_docs / num_features
 def generate_knn_graph(data_set, k, verbose=False):
@@ -328,3 +327,6 @@ def generate_knn_graphs(data_set, ks=[5,10,20,30,50,100], verbose=False):
                     if weight >= 1e-9:
                         datawriter.writerow([str(doc+1), str(neighbor+1), weight])
             if verbose: print 'Wrote graph file %s' % filename
+
+def generate_proppr_graph(data_set, verbose=False):
+    run_proppr(data_set)

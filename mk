@@ -39,6 +39,8 @@ def make_iterative_baseline_graph(data_set, iterations, percentile):
     graph.generate_labeled_baseline_graph(output_file, verbose=True,
                                           percentile=percentile)
 
+def make_proppr_graph(data_set):
+    graph.generate_proppr_graph(data_set, verbose=True)
 
 def make_config(data_set):
     util.make_config(data_set)
@@ -127,6 +129,8 @@ def main():
                 except:
                     nc = 1
                 make_kmeans_graph(data_set, k, nc)
+            elif graph_type == 'proppr':
+                make_proppr_graph(data_set)
         elif sys.argv[1] == 'config':
             make_config(sys.argv[2])
         elif sys.argv[1] == 'seeds':
