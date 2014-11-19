@@ -1,6 +1,3 @@
-[submodule "ProPPR"]
-	path = lib/ProPPR
-	url = https://github.com/TeamCohen/ProPPR
 [submodule "lib/junto"]
 	path = lib/junto
 	url = https://github.com/parthatalukdar/junto
