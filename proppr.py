@@ -44,7 +44,7 @@ def run_proppr(data_set):
             --prover dpr:0.0001:0.01:boost --threads 8
         '''.format(PROPPR_DIR, PROPPR_PROGRAM_DIR, data_set)
     }
-    generate_facts(data_set)
+    generate_data(data_set)
     subprocess.call(commands['compile'], shell=True)
     subprocess.call(commands['train'], shell=True)
 

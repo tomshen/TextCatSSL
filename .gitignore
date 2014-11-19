@@ -2,7 +2,10 @@ config
 data
 graph
 out
-proppr
+proppr/*.c*
+proppr/*.arg
+proppr/*.wts
+proppr/*.data
 
 ### Java ###
 *.class
