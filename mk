@@ -28,13 +28,13 @@ def make_iterative_baseline_graph(data_set, iterations, percentile):
     if iterations == 1:
         return
     make_config(output_file)
-    run_junto(output_file)
+    util.run_junto(output_file)
     for i in xrange(2, iterations):
-        run_junto(output_file)
+        util.run_junto(output_file)
         print 'Iteration %d' % i
         graph.generate_labeled_baseline_graph(output_file, verbose=True,
                                               percentile=percentile)
-    run_junto(output_file)
+    util.run_junto(output_file)
     print 'Iteration %d' % iterations
     graph.generate_labeled_baseline_graph(output_file, verbose=True,
                                           percentile=percentile)
@@ -57,14 +57,6 @@ def make_seeds(data_set, perc_seeds=0.1):
         for label, docs in labels.items():
             for doc in docs:
                 f.write(str(doc) + '\t' + str(label) + '\t%d\n' % num_docs)
-
-def run_junto(config_file):
-    junto_env = os.environ.copy()
-    junto_env['JUNTO_DIR'] = os.path.join(os.getcwd(), 'lib/junto')
-    junto_env['PATH'] = junto_env['JUNTO_DIR'] + ':' + junto_env['PATH']
-    junto_env['JAVA_MEM_FLAG'] = '-Xmx32g'
-    subprocess.call(['./lib/junto/bin/junto', 'config',
-        os.path.join(config.CONFIG_DIR, config_file)], env=junto_env)
 
 def analyze_output(graph_file):
     analyze.save_pred_labels(graph_file)
@@ -145,7 +137,7 @@ def main():
         elif sys.argv[1] == 'run':
             if sys.argv[2] not in os.listdir(config.CONFIG_DIR):
                 make_config(sys.argv[2])
-            run_junto(sys.argv[2])
+            util.run_junto(sys.argv[2])
         elif sys.argv[1] == 'clean':
             clean()
             if len(sys.argv) > 2:

@@ -38,13 +38,39 @@ def run_proppr(data_set):
         'compile': 'cd {0} && sh scripts/compile.sh {1}'.format(
             PROPPR_DIR, PROPPR_PROGRAM_DIR),
         'train': '''
-            java -cp {0}/bin:{0}/lib/*:{0}/conf/ edu.cmu.ml.praprolog.Trainer \
+            java -cp {0}/bin:{0}/lib/*:{0}/conf/ edu.cmu.ml.praprolog.ExampleCooker \
             --programFiles {1}/textcat.crules:{1}/{2}.cfacts:{1}/{2}.graph \
-            --train {1}/{2}.data --output {1}/{2}.cooked --params {1}/{2}.wts \
-            --prover dpr:0.0001:0.01:boost --threads 8
+            --data {1}/{2}.data --output {1}/{2}.cooked \
+            --prover dpr:0.0001:0.1:adjust --threads 24
         '''.format(PROPPR_DIR, PROPPR_PROGRAM_DIR, data_set)
     }
     generate_data(data_set)
     subprocess.call(commands['compile'], shell=True)
     subprocess.call(commands['train'], shell=True)
+
+
+def parse_cooked(cooked):
+    def split(l, sep=','):
+        return l.split(sep) if l else []
+
+    def parse_edge(edge):
+        src, dest, raw_feats = re.match(r'(\d*)->(\d*):([\d,]*)', edge).groups()
+        return int(src), int(dest), [int(f) for f in split(raw_feats)]
+
+    doc_nodes = {}
+
+    for line in cooked:
+        tokens = line.strip().split('\t')
+        doc = int(re.match(r'predict\(d(\w*),.*\)', tokens[0]).group(1))
+        query_vec_keys = tokens[1].split(',') if tokens[1] else []
+        pos_nodes = [int(n) for n in split(tokens[2])]
+        neg_nodes = [int(n) for n in split(tokens[3])]
+        node_count = int(tokens[4])
+        edge_count = int(tokens[5])
+        features = split(tokens[6], ':')
+        edges = [parse_edge(e) for e in tokens[7:]]
+        doc_nodes[doc] = {
+            'pos': pos_nodes,
+            'neg': neg_nodes
+        }
 

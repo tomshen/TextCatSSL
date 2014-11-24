@@ -180,3 +180,11 @@ def parse_output_file(output_file):
 
 def print_as_json(obj, sort=True):
     print(json.dumps(obj, sort_keys=sort, indent=2, separators=(',', ': ')))
+
+def run_junto(config_file):
+    junto_env = os.environ.copy()
+    junto_env['JUNTO_DIR'] = os.path.join(os.getcwd(), 'lib/junto')
+    junto_env['PATH'] = junto_env['JUNTO_DIR'] + ':' + junto_env['PATH']
+    junto_env['JAVA_MEM_FLAG'] = '-Xmx32g'
+    subprocess.call(['./lib/junto/bin/junto', 'config',
+        os.path.join(CONFIG_DIR, config_file)], env=junto_env)
