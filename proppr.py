@@ -7,9 +7,9 @@ import util
 
 
 def generate_facts(data_set):
-    with open(path.join(PROPPR_PROGRAM_DIR, data_set + '.facts'), 'w') as f:
+    with open(path.join(PROPPR_PROGRAM_DIR, data_set + '.cfacts'), 'w') as f:
         for i in xrange(1, util.get_num_labels(data_set) + 1):
-            f.write('isLabel(l%d)\n' % i)
+            f.write('isLabel\tl%d\n' % i)
 
 
 def generate_data(data_set):
@@ -35,13 +35,15 @@ def generate_graph(data_set):
 
 def run_proppr(data_set):
     commands = {
-        'compile': 'cd {0} && sh scripts/compile.sh {1}'.format(
-            PROPPR_DIR, PROPPR_PROGRAM_DIR),
+        'compile': '''
+            cd {0} && python src/scripts/compiler.py serialize \
+            {1}/textcat.ppr > {1}/textcat.wam
+        '''.format(PROPPR_DIR, PROPPR_PROGRAM_DIR),
         'train': '''
-            java -cp {0}/bin:{0}/lib/*:{0}/conf/ edu.cmu.ml.praprolog.ExampleCooker \
-            --programFiles {1}/textcat.crules:{1}/{2}.cfacts:{1}/{2}.graph \
-            --data {1}/{2}.data --output {1}/{2}.cooked \
-            --prover dpr:0.0001:0.1:adjust --threads 24
+            java -cp {0}/bin:{0}/lib/*:{0}/conf/ edu.cmu.ml.proppr.Grounder \
+            --queries {1}/{2}.data --grounded {1}/{2}.cooked \
+            --programFiles {1}/textcat.wam:{1}/{2}.graph:{1}/{2}.cfacts \
+            --threads 24
         '''.format(PROPPR_DIR, PROPPR_PROGRAM_DIR, data_set)
     }
     generate_data(data_set)

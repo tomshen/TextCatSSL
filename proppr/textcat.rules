@@ -1,2 +1,0 @@
-predict(D,Y) :- hasWord(D,W),isLabel(Y),related(W,Y) #r.
-related(W,Y) :- # w(W,Y).
